@@ -1,0 +1,35 @@
+<div class="calendario-vacaciones">
+  <div class="calendario-cabecera">
+    <button type="button" class="btn-nav" (click)="mesAnterior()">‹</button>
+    <h3>{{ tituloMes() }}</h3>
+    <button type="button" class="btn-nav" (click)="mesSiguiente()">›</button>
+  </div>
+
+  <div class="calendario-grilla">
+    @for (nombre of nombresDias; track nombre) {
+      <div class="dia-cabecera">{{ nombre }}</div>
+    }
+    @for (dia of diasMes(); track $index) {
+      <div class="dia-celda" [class.dia-vacio]="!dia.fecha">
+        @if (dia.fecha) {
+          <span class="dia-numero">{{ dia.fecha.getDate() }}</span>
+          @for (evento of dia.eventos; track evento.solicitudId) {
+            <div class="evento" [class]="claseEstado(evento.estado)" [title]="evento.nombreEmpleado">
+              @if (mostrarEmpleado) {
+                <span>{{ evento.nombreEmpleado.split(' ')[0] }}</span>
+              } @else {
+                <span>Vac.</span>
+              }
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="leyenda">
+    <span class="leyenda-item evento-aprobado">Aprobado</span>
+    <span class="leyenda-item evento-pendiente">Pendiente</span>
+    <span class="leyenda-item evento-rechazado">Rechazado</span>
+  </div>
+</div>

@@ -1,0 +1,59 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Perfil</h1>
+    <p>Tus datos</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="perfil" />
+  } @else {
+    @if (empleado(); as e) {
+      <section class="tarjeta-formulario">
+        <h2>Datos personales</h2>
+        <dl class="grilla-perfil">
+          <div>
+            <dt>Nombre completo</dt>
+            <dd>{{ e.nombre }} {{ e.apellido }}</dd>
+          </div>
+          <div>
+            <dt>DNI</dt>
+            <dd>{{ e.dni ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>CUIL</dt>
+            <dd>{{ e.cuil ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Estado</dt>
+            <dd>
+              <ui-insignia [variante]="variante(e.estado)">{{ etiqueta(e.estado) }}</ui-insignia>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="tarjeta-formulario">
+        <h2>Datos laborales</h2>
+        <dl class="grilla-perfil">
+          <div>
+            <dt>N.º empleado</dt>
+            <dd>{{ e.numeroEmpleado ?? '—' }}</dd>
+          </div>
+          <div>
+            <dt>Fecha de ingreso</dt>
+            <dd>{{ e.fechaIngreso ? (e.fechaIngreso | date:'dd/MM/yyyy') : '—' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="tarjeta-formulario">
+        <h2>Sesión</h2>
+        <ui-boton variante="peligro" (pulsado)="cerrarSesion()">Cerrar sesión</ui-boton>
+      </section>
+    }
+  }
+</div>

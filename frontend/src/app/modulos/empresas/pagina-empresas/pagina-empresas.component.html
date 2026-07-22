@@ -1,0 +1,86 @@
+<div class="pagina-empresas">
+  <header class="encabezado-pagina">
+    <h1>Empresas</h1>
+    <p>
+      @if (esVistaPlataforma()) {
+        Gestión de empresas y acceso a soporte
+      } @else {
+        Las empresas a las que tenés acceso
+      }
+    </p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-primario" (click)="alternarFormulario()">
+      {{ mostrarFormulario() ? 'Cancelar' : 'Nueva empresa' }}
+    </button>
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>Crear empresa</h2>
+      <form [formGroup]="formularioCrear" (ngSubmit)="crearEmpresa()">
+        <div class="grilla-formulario">
+          <label>
+            Nombre *
+            <input formControlName="nombre" />
+          </label>
+          <label>
+            Razón social
+            <input formControlName="razonSocial" />
+          </label>
+          <label>
+            CUIT
+            <input formControlName="cuit" />
+          </label>
+          <label>
+            Correo
+            <input type="email" formControlName="email" />
+          </label>
+          <label>
+            Teléfono
+            <input formControlName="telefono" />
+          </label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Creando...' : 'Crear empresa' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando empresas...</div>
+  } @else {
+    <div class="grilla-empresas">
+      @for (empresa of empresas(); track empresa.id) {
+        <article class="tarjeta-empresa" (click)="abrirFicha(empresa)">
+          <h3>
+            <a [routerLink]="['/plataforma/empresas', empresa.id]" (click)="$event.stopPropagation()">
+              {{ empresa.nombre }}
+            </a>
+          </h3>
+          @if (empresa.razonSocial) {
+            <p>{{ empresa.razonSocial }}</p>
+          }
+          <span class="etiqueta" [class.activo]="empresa.estado === 'ACTIVA'">{{ empresa.estado }}</span>
+          <div class="acciones-empresa">
+            <button type="button" class="btn-secundario" (click)="gestionarUsuarios(empresa, $event)">
+              Usuarios
+            </button>
+            <button type="button" class="btn-soporte" (click)="gestionarEmpleados(empresa, $event)">
+              Gestionar empleados
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <div class="sin-datos">No hay empresas. Creá la primera para comenzar.</div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,279 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Documentos</h1>
+    <p>Todo lo que tu equipo necesita firmar o consultar</p>
+  </header>
+
+  <div class="pestanas">
+    <button type="button" [class.activa]="pestanaActiva() === 'catalogo'" (click)="cambiarPestana('catalogo')">Documentos</button>
+    <button type="button" [class.activa]="pestanaActiva() === 'categorias'" (click)="cambiarPestana('categorias')">Categorías</button>
+    <button type="button" [class.activa]="pestanaActiva() === 'asignaciones'" (click)="cambiarPestana('asignaciones')">Asignaciones</button>
+  </div>
+
+  @if (pestanaActiva() === 'categorias') {
+    <div class="barra-herramientas con-accion-principal" *tienePermiso="'documento.gestionar'">
+      <span></span>
+      <button type="button" class="btn-primario" (click)="mostrarFormularioCategoria.set(!mostrarFormularioCategoria())">
+        {{ mostrarFormularioCategoria() ? 'Cancelar' : 'Nueva categoría' }}
+      </button>
+    </div>
+    @if (mostrarFormularioCategoria()) {
+      <section class="tarjeta-formulario">
+        <h2>Crear categoría</h2>
+        <form [formGroup]="formularioCategoria" (ngSubmit)="crearCategoria()">
+          <div class="grilla-formulario">
+            <label>Nombre *<input formControlName="nombre" /></label>
+            <label>Descripción<input formControlName="descripcion" /></label>
+          </div>
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando...' : 'Crear categoría' }}
+          </button>
+        </form>
+      </section>
+    }
+  }
+
+  @if (pestanaActiva() === 'catalogo') {
+    <div class="barra-herramientas con-accion-principal" *tienePermiso="'documento.gestionar'">
+      <span></span>
+      <button type="button" class="btn-primario" (click)="mostrarFormularioDocumento.set(!mostrarFormularioDocumento())">
+        {{ mostrarFormularioDocumento() ? 'Cancelar' : 'Nuevo documento' }}
+      </button>
+    </div>
+    @if (mostrarFormularioDocumento()) {
+      <section class="tarjeta-formulario">
+        <h2>Crear documento</h2>
+        <form [formGroup]="formularioDocumento" (ngSubmit)="crearDocumento()">
+          <div class="grilla-formulario">
+            <label>
+              Categoría *
+              <select formControlName="categoriaId">
+                <option [value]="0">Seleccionar...</option>
+                @for (c of categorias(); track c.id) {
+                  <option [value]="c.id">{{ c.nombre }}</option>
+                }
+              </select>
+            </label>
+            <label>Título *<input formControlName="titulo" /></label>
+            <label>Descripción<input formControlName="descripcion" /></label>
+            <label>Versión<input formControlName="version" /></label>
+            <label>Archivo *</label>
+            <app-selector-archivo aceptar=".pdf" (urlArchivo)="establecerUrlArchivo($event)" />
+            <input type="hidden" formControlName="urlArchivo" />
+            <label class="checkbox">
+              <input type="checkbox" formControlName="requiereFirma" />
+              Requiere firma
+            </label>
+          </div>
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando...' : 'Crear documento' }}
+          </button>
+        </form>
+      </section>
+    }
+  }
+
+  @if (pestanaActiva() === 'asignaciones') {
+    <div class="barra-herramientas con-accion-principal" *tienePermiso="'documento.gestionar'">
+      <span></span>
+      <button type="button" class="btn-primario" (click)="mostrarFormularioAsignar.set(!mostrarFormularioAsignar())">
+        {{ mostrarFormularioAsignar() ? 'Cancelar' : 'Asignar documento' }}
+      </button>
+    </div>
+    @if (mostrarFormularioAsignar()) {
+      <section class="tarjeta-formulario">
+        <h2>Asignar documento a empleados</h2>
+        <form [formGroup]="formularioAsignar" (ngSubmit)="asignarDocumento()">
+          <div class="grilla-formulario">
+            <label>
+              Documento *
+              <select formControlName="documentoId">
+                <option [value]="0">Seleccionar...</option>
+                @for (d of documentos(); track d.id) {
+                  <option [value]="d.id">{{ d.titulo }}</option>
+                }
+              </select>
+            </label>
+            <label>Fecha vencimiento<input type="date" formControlName="fechaVencimiento" /></label>
+          </div>
+
+          <fieldset class="grupo-roles">
+            <legend>Empleados *</legend>
+            <div class="lista-roles">
+              @for (e of empleados(); track e.id) {
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    [checked]="empleadoMarcado(e.id)"
+                    (change)="alternarEmpleado(e.id)"
+                  />
+                  {{ e.nombre }} {{ e.apellido }}
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Asignando...' : 'Asignar documento' }}
+          </button>
+        </form>
+      </section>
+    }
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando documentos...</div>
+  } @else if (pestanaActiva() === 'catalogo') {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Versión</th>
+            <th>Requiere firma</th>
+            <th>Activo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of documentos(); track d.id) {
+            <tr>
+              <td>{{ d.titulo }}</td>
+              <td>{{ d.categoriaNombre }}</td>
+              <td>{{ d.version }}</td>
+              <td>{{ d.requiereFirma ? 'Sí' : 'No' }}</td>
+              <td>{{ d.activo ? 'Sí' : 'No' }}</td>
+              <td>
+                @if (d.urlArchivo) {
+                  <button type="button" class="btn-accion" (click)="abrirDocumentoCatalogo(d)">Ver</button>
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="sin-datos">No hay documentos cargados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (pestanaActiva() === 'categorias') {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Activa</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of categorias(); track c.id) {
+            <tr>
+              <td>{{ c.nombre }}</td>
+              <td>{{ c.descripcion ?? '—' }}</td>
+              <td>{{ c.activa ? 'Sí' : 'No' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="3" class="sin-datos">No hay categorías registradas</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Empleado</th>
+            <th>Estado</th>
+            <th>Firmado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of asignaciones(); track a.id) {
+            <tr>
+              <td>{{ a.tituloDocumento }}</td>
+              <td>{{ a.nombreEmpleado }}</td>
+              <td><span class="etiqueta">{{ a.estado }}</span></td>
+              <td>{{ a.firmado ? 'Sí' : 'No' }}</td>
+              <td>
+                @if (a.urlArchivo) {
+                  <button type="button" class="btn-accion" (click)="abrirDocumentoAsignacion(a)">Ver</button>
+                }
+                @if (a.firmado) {
+                  <button type="button" class="btn-accion" (click)="verEvidenciaFirma(a.id)">
+                    Ver evidencia
+                  </button>
+                }
+                @if (!a.urlArchivo && !a.firmado) {
+                  —
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="sin-datos">No hay asignaciones</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (documentoEnVista(); as documento) {
+    <section class="tarjeta-formulario">
+      <header class="tarjeta-registro-portal-encabezado">
+        <h2>{{ documento.titulo }}</h2>
+        <button type="button" class="btn-secundario" (click)="cerrarDocumento()">Cerrar</button>
+      </header>
+      <app-visor-documento
+        [urlFuente]="documento.urlArchivo!"
+        [titulo]="documento.titulo"
+        etiquetaCarga="Cargando documento"
+        (errorCarga)="error.set($event)"
+      />
+    </section>
+  }
+
+  @if (asignacionEnVista(); as asignacion) {
+    <section class="tarjeta-formulario">
+      <header class="tarjeta-registro-portal-encabezado">
+        <h2>{{ asignacion.tituloDocumento }}</h2>
+        <button type="button" class="btn-secundario" (click)="cerrarDocumento()">Cerrar</button>
+      </header>
+      <app-visor-documento
+        [urlFuente]="asignacion.urlArchivo!"
+        [titulo]="asignacion.tituloDocumento"
+        etiquetaCarga="Cargando documento"
+        (errorCarga)="error.set($event)"
+      />
+    </section>
+  }
+
+  @if (evidenciaFirma(); as evidencia) {
+    <section class="tarjeta-formulario">
+      <h2>Evidencia de firma</h2>
+      <div class="grilla-formulario">
+        <div><strong>Fecha:</strong> {{ evidencia.fechaFirma }}</div>
+        <div><strong>IP:</strong> {{ evidencia.direccionIp ?? '—' }}</div>
+        <div><strong>Dispositivo:</strong> {{ evidencia.dispositivo ?? '—' }}</div>
+        <div class="ancho-completo"><strong>Hash:</strong> <code>{{ evidencia.hashFirma }}</code></div>
+      </div>
+      @if (evidencia.urlArchivoFirmado) {
+        <app-visor-documento
+          [urlFuente]="evidencia.urlArchivoFirmado"
+          titulo="Documento firmado"
+          etiquetaCarga="Cargando documento firmado"
+          (errorCarga)="error.set($event)"
+        />
+      }
+      <button type="button" class="btn-secundario" (click)="cerrarEvidenciaFirma()">Cerrar</button>
+    </section>
+  }
+</div>

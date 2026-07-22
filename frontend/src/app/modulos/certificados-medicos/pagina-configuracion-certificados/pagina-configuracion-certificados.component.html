@@ -1,0 +1,96 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Ajustes de certificados</h1>
+    <p>Umbrales de revisión y lectura con IA por empresa</p>
+    <a routerLink="/certificados-medicos" class="enlace-volver">← Volver a certificados</a>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+  @if (exito()) {
+    <p class="etiqueta-recibo firmado mensaje-exito">{{ exito() }}</p>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando configuración...</div>
+  } @else {
+    @if (configActual(); as config) {
+      <div class="indicadores-config">
+        <span class="etiqueta-recibo" [class.firmado]="config.iaConfigurada" [class.pendiente]="!config.iaConfigurada">
+          {{ config.iaConfigurada ? 'IA configurada' : 'IA no configurada' }}
+        </span>
+        @if (config.credencialesConfiguradas) {
+          <span class="etiqueta-recibo visto">Credenciales GCP guardadas</span>
+        }
+      </div>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="tarjeta-formulario">
+      <h2>Umbrales de revisión</h2>
+      <div class="grilla-formulario">
+        <label>
+          Días reposo alerta leve *
+          <input type="number" formControlName="diasReposoAlertaLeve" min="1" max="90" />
+        </label>
+        <label>
+          Máx. licencias cortas en período *
+          <input type="number" formControlName="maxLicenciasCortasPeriodo" min="1" max="20" />
+        </label>
+        <label>
+          Período evaluación (días) *
+          <input type="number" formControlName="periodoEvaluacionDias" min="30" max="365" />
+        </label>
+        <label>
+          Máx. intentos extracción IA
+          <input type="number" formControlName="maxIntentosExtraccion" min="1" max="10" />
+        </label>
+        <label class="checkbox ancho-completo">
+          <input type="checkbox" formControlName="requiereRevisionManualSiempre" />
+          Requiere revisión manual siempre
+        </label>
+      </div>
+
+      <h2>Vertex AI (por empresa)</h2>
+      <p class="ayuda-bloque">
+        Cada empresa usa su propio proyecto GCP. Las credenciales de la cuenta de servicio se cifran en el servidor
+        y nunca se devuelven completas.
+      </p>
+      <div class="grilla-formulario">
+        <label>
+          Proyecto GCP
+          <input formControlName="proyectoGcp" placeholder="mi-proyecto-rrhh" />
+        </label>
+        <label>
+          Región Vertex
+          <input formControlName="regionVertex" placeholder="us-central1" />
+        </label>
+        <label>
+          Modelo Gemini
+          <select formControlName="modeloGemini">
+            <option value="">Seleccionar modelo...</option>
+            @for (modelo of modelosDisponibles(); track modelo) {
+              <option [value]="modelo">{{ modelo }}</option>
+            }
+          </select>
+        </label>
+        <label class="ancho-completo">
+          Credenciales cuenta de servicio (JSON)
+          <textarea
+            formControlName="credencialesServicioJson"
+            rows="6"
+            placeholder="Pegá el JSON solo al configurar o rotar credenciales"
+            (input)="marcarCredencialesModificadas()"
+          ></textarea>
+          @if (configActual()?.credencialesConfiguradas) {
+            <small>Ya hay credenciales guardadas. Dejá vacío para mantenerlas.</small>
+          }
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primario" [disabled]="guardando() || formulario.invalid">
+        {{ guardando() ? 'Guardando...' : 'Guardar configuración' }}
+      </button>
+    </form>
+  }
+</div>

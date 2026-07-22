@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:rrhh_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: true
+
+app:
+  jwt:
+    secreto: test-secreto-jwt-para-pruebas-unitarias-minimo-256-bits-largo
+    expiracion-ms: 3600000
+    refresco-expiracion-ms: 604800000
+  demo:
+    cargar-datos: true
+  recibos:
+    verificacion-integridad:
+      habilitada: false
+  almacenamiento:
+    proveedor: disco
+    ruta-base: ./target/test-archivos
+    tamano-maximo-mb: 10
+  certificados:
+    ia:
+      simulada: true

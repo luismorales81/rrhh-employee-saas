@@ -1,0 +1,386 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Certificados</h1>
+    <p>Revisá y validá certificados médicos</p>
+  </header>
+
+  <nav class="pestanas">
+    @if (puedeVerBandeja()) {
+      <button
+        type="button"
+        [class.activa]="vistaActiva() === 'bandeja'"
+        (click)="cambiarVista('bandeja')"
+      >
+        Pendientes de revisión
+      </button>
+    }
+    <button
+      type="button"
+      [class.activa]="vistaActiva() === 'empleado'"
+      (click)="cambiarVista('empleado')"
+    >
+      Por empleado
+    </button>
+    @if (servicioPermisos.tienePermiso('reporte.ausentismo.ver')) {
+      <button
+        type="button"
+        [class.activa]="vistaActiva() === 'reporte'"
+        (click)="cambiarVista('reporte')"
+      >
+        Reporte de ausentismo
+      </button>
+    }
+    <ng-container *tienePermiso="'certificado.configurar'">
+      <a routerLink="/certificados-medicos/configuracion" class="enlace-configuracion">
+        Ajustes de IA
+      </a>
+    </ng-container>
+  </nav>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (vistaActiva() === 'bandeja') {
+    <div class="barra-herramientas barra-filtros con-accion-principal">
+      <input
+        type="search"
+        class="campo-busqueda"
+        placeholder="Buscar por empleado, tipo o ID..."
+        [ngModel]="filtroTextoBandeja()"
+        (ngModelChange)="filtroTextoBandeja.set($event)"
+      />
+      <label class="checkbox-inline">
+        <input
+          type="checkbox"
+          [ngModel]="incluirRequiereAclaracionBandeja()"
+          (ngModelChange)="alCambiarIncluirAclaracion($event)"
+        />
+        Incluir requiere aclaración
+      </label>
+      <button type="button" class="btn-secundario" (click)="cargarBandeja()">Actualizar</button>
+    </div>
+
+    @if (cargando()) {
+      <div class="estado-carga">Cargando pendientes de revisión...</div>
+    } @else {
+      <div class="resumen-bandeja">
+        <p>{{ bandejaFiltrada().length }} certificado(s) pendientes de revisión</p>
+      </div>
+      <div class="tabla-contenedor">
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Empleado</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Reposo</th>
+              <th>Emisión</th>
+              <th>Carga</th>
+              <th>Alertas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of bandejaFiltrada(); track c.id) {
+              <tr [class.fila-prioritaria]="c.revisionPrioritaria">
+                <td>{{ c.id }}</td>
+                <td>{{ nombreEmpleado(c.empleadoId) }}</td>
+                <td>{{ etiquetasTipo[c.tipoExamen] }}</td>
+                <td><span class="etiqueta-recibo" [class]="claseEstado(c.estado)">{{ etiquetasEstado[c.estado] }}</span></td>
+                <td>{{ c.reposoDias ?? '—' }}</td>
+                <td>{{ c.fechaEmision ? (c.fechaEmision | date:'dd/MM/yyyy') : '—' }}</td>
+                <td>{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  @if (c.revisionPrioritaria) {
+                    <span class="etiqueta-alerta" [title]="c.motivosAlerta.join('; ')">Prioritario</span>
+                  } @else if (c.motivosAlerta.length) {
+                    <span class="etiqueta-pendiente">{{ c.motivosAlerta.length }} alerta(s)</span>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  <button type="button" class="btn-accion" (click)="abrirDetalle(c)">Revisar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="sin-datos">No hay certificados pendientes de revisión</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  @if (vistaActiva() === 'empleado') {
+    <div class="barra-herramientas barra-filtros con-accion-principal">
+      <label class="campo-empleado">
+        Empleado
+        <app-buscador-empleado
+          [empleados]="empleados()"
+          [ngModel]="empleadoSeleccionadoId()"
+          (ngModelChange)="alSeleccionarEmpleado($event)"
+        />
+      </label>
+      <input
+        type="search"
+        class="campo-busqueda"
+        placeholder="Buscar en el listado..."
+        [ngModel]="filtroTexto()"
+        (ngModelChange)="filtroTexto.set($event)"
+      />
+      <select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)">
+        <option value="">Todos los estados</option>
+        @for (estado of estadosFiltro; track estado) {
+          <option [value]="estado">{{ etiquetasEstado[estado] }}</option>
+        }
+      </select>
+      <label class="checkbox-inline">
+        <input type="checkbox" [ngModel]="soloPendientes()" (ngModelChange)="soloPendientes.set($event)" />
+        Solo pendientes de revisión
+      </label>
+      <ng-container *tienePermiso="'certificado.cargar'">
+        <button type="button" class="btn-primario" (click)="alternarFormularioCarga()">
+          {{ mostrarFormularioCarga() ? 'Cancelar' : 'Cargar certificado' }}
+        </button>
+      </ng-container>
+    </div>
+
+    @if (mostrarFormularioCarga()) {
+      <section class="tarjeta-formulario">
+        <h2>Cargar certificado</h2>
+        <form [formGroup]="formularioCarga" (ngSubmit)="enviarCarga()">
+          <div class="grilla-formulario">
+            <label class="ancho-completo">
+              Empleado *
+              <app-buscador-empleado formControlName="empleadoId" [empleados]="empleados()" />
+            </label>
+            <label>
+              Tipo de examen *
+              <select formControlName="tipoExamen">
+                @for (tipo of tiposExamen; track tipo) {
+                  <option [value]="tipo">{{ etiquetasTipo[tipo] }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Origen de carga *
+              <select formControlName="origenCarga">
+                <option value="MEDICO_LABORAL">Médico laboral</option>
+                <option value="EMPLEADO">Empleado</option>
+              </select>
+            </label>
+            <label class="ancho-completo">
+              Archivo (PDF o imagen) *
+              <app-selector-archivo aceptar=".pdf,image/*" (archivoCargado)="alSubirArchivo($event)" />
+            </label>
+          </div>
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Enviando...' : 'Enviar a procesamiento' }}
+          </button>
+        </form>
+      </section>
+    }
+
+    @if (!empleadoSeleccionadoId()) {
+      <div class="estado-vacio-inline">Seleccioná un empleado para ver sus certificados.</div>
+    } @else if (cargando()) {
+      <div class="estado-carga">Cargando certificados...</div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Reposo</th>
+              <th>Emisión</th>
+              <th>Carga</th>
+              <th>Alertas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of certificadosFiltrados(); track c.id) {
+              <tr [class.fila-prioritaria]="c.revisionPrioritaria">
+                <td>{{ c.id }}</td>
+                <td>{{ etiquetasTipo[c.tipoExamen] }}</td>
+                <td><span class="etiqueta-recibo" [class]="claseEstado(c.estado)">{{ etiquetasEstado[c.estado] }}</span></td>
+                <td>{{ c.reposoDias ?? '—' }}</td>
+                <td>{{ c.fechaEmision ? (c.fechaEmision | date:'dd/MM/yyyy') : '—' }}</td>
+                <td>{{ c.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  @if (c.revisionPrioritaria) {
+                    <span class="etiqueta-alerta" title="{{ c.motivosAlerta.join('; ') }}">Prioritario</span>
+                  } @else if (c.motivosAlerta.length) {
+                    <span class="etiqueta-pendiente">{{ c.motivosAlerta.length }} alerta(s)</span>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  <button type="button" class="btn-accion" (click)="abrirDetalle(c)">Ver</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="sin-datos">No hay certificados para los filtros seleccionados</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  @if (vistaActiva() === 'reporte') {
+    <section class="tarjeta-formulario">
+      <h2>Reporte de ausentismo (certificados validados)</h2>
+      <form [formGroup]="formularioReporte" (ngSubmit)="generarReporte()" class="grilla-formulario grilla-reporte">
+        <label>Desde<input type="date" formControlName="desde" /></label>
+        <label>Hasta<input type="date" formControlName="hasta" /></label>
+        <button type="submit" class="btn-primario" [disabled]="reporteCargando()">
+          {{ reporteCargando() ? 'Generando...' : 'Generar reporte' }}
+        </button>
+      </form>
+    </section>
+
+    @if (reporteCargando()) {
+      <div class="estado-carga">Generando reporte...</div>
+    } @else {
+      @if (reporte(); as r) {
+        <div class="resumen-reporte">
+          <p><strong>Empleados con ausentismo:</strong> {{ r.cantidadEmpleadosConAusentismo }}</p>
+          <p><strong>Días de reposo totales:</strong> {{ r.diasReposoTotalesEmpresa }}</p>
+        </div>
+        <div class="tabla-contenedor">
+          <table class="tabla-datos">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Certificados validados</th>
+                <th>Días de reposo</th>
+                <th>Con reposo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of r.resumenesPorEmpleado; track item.empleadoId) {
+                <tr>
+                  <td>{{ nombreEmpleado(item.empleadoId) }}</td>
+                  <td>{{ item.totalCertificadosValidados }}</td>
+                  <td>{{ item.diasReposoTotales }}</td>
+                  <td>{{ item.certificadosConReposo }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="sin-datos">Sin datos en el período</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+
+  @if (mostrarModalDetalle() && certificadoDetalle(); as detalle) {
+    <div class="modal-fondo" (click)="cerrarDetalle()">
+      <section class="modal-contenido tarjeta-formulario modal-ancho" (click)="$event.stopPropagation()">
+        <h2>Certificado #{{ detalle.id }}</h2>
+        <div class="grilla-detalle">
+          <div><strong>Estado:</strong> {{ etiquetasEstado[detalle.estado] }}</div>
+          <div><strong>Tipo:</strong> {{ etiquetasTipo[detalle.tipoExamen] }}</div>
+          <div><strong>Empleado:</strong> {{ nombreEmpleado(detalle.empleadoId) }}</div>
+          <div><strong>Reposo:</strong> {{ detalle.reposoDias ?? '—' }} días</div>
+          <div><strong>Emisión:</strong> {{ detalle.fechaEmision ? (detalle.fechaEmision | date:'dd/MM/yyyy') : '—' }}</div>
+          <div><strong>Origen:</strong> {{ detalle.origenCarga === 'EMPLEADO' ? 'Empleado' : 'Médico laboral' }}</div>
+          @if (comoCompleto(detalle); as completo) {
+            <div class="ancho-completo"><strong>Diagnóstico:</strong> {{ completo.diagnostico ?? '—' }}</div>
+            <div><strong>Médico:</strong> {{ completo.medicoNombre ?? '—' }}</div>
+            <div><strong>Matrícula:</strong> {{ completo.medicoMatricula ?? '—' }}</div>
+            <div><strong>Confianza IA:</strong> {{ completo.confianzaExtraccion ?? '—' }}</div>
+          }
+          @if (detalle.motivosAlerta.length) {
+            <div class="ancho-completo alertas-detalle">
+              <strong>Alertas:</strong>
+              <ul>
+                @for (motivo of detalle.motivosAlerta; track motivo) {
+                  <li>{{ motivo }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+        <app-visor-documento
+          [urlFuente]="detalle.archivoUrl"
+          titulo="Archivo del certificado"
+          etiquetaCarga="Cargando archivo del certificado"
+          (errorCarga)="error.set($event)"
+        />
+        <div class="acciones-modal">
+          @if (puedeReprocesar()) {
+            <button type="button" class="btn-secundario" (click)="reprocesar()" [disabled]="guardando()">
+              Reprocesar IA
+            </button>
+          }
+          @if (puedeValidar(detalle)) {
+            <button type="button" class="btn-primario" (click)="abrirValidar()">Validar</button>
+            <button type="button" class="btn-peligro" (click)="abrirRechazar()">Rechazar</button>
+          }
+          <button type="button" class="btn-secundario" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (mostrarModalValidar()) {
+    <div class="modal-fondo" (click)="cerrarValidar()">
+      <section class="modal-contenido tarjeta-formulario" (click)="$event.stopPropagation()">
+        <h2>Validar certificado</h2>
+        <form [formGroup]="formularioValidar" (ngSubmit)="confirmarValidar()">
+          <div class="grilla-formulario">
+            <label>Diagnóstico<input formControlName="diagnostico" /></label>
+            <label>Días de reposo<input type="number" formControlName="reposoDias" min="0" /></label>
+            <label>Médico<input formControlName="medicoNombre" /></label>
+            <label>Matrícula<input formControlName="medicoMatricula" /></label>
+            <label>Fecha emisión<input type="date" formControlName="fechaEmision" /></label>
+            <label class="checkbox ancho-completo">
+              <input type="checkbox" formControlName="corregidoManualmente" />
+              Datos corregidos manualmente
+            </label>
+            <label class="ancho-completo">Observaciones<textarea formControlName="observaciones" rows="2"></textarea></label>
+          </div>
+          <div class="acciones-modal">
+            <button type="button" class="btn-secundario" (click)="cerrarValidar()">Cancelar</button>
+            <button type="submit" class="btn-primario" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Confirmar validación' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+
+  @if (mostrarModalRechazar()) {
+    <div class="modal-fondo" (click)="cerrarRechazar()">
+      <section class="modal-contenido tarjeta-formulario" (click)="$event.stopPropagation()">
+        <h2>Rechazar certificado</h2>
+        <form [formGroup]="formularioRechazar" (ngSubmit)="confirmarRechazar()">
+          <label class="ancho-completo">
+            Motivo del rechazo *
+            <textarea formControlName="observaciones" rows="3" required></textarea>
+          </label>
+          <div class="acciones-modal">
+            <button type="button" class="btn-secundario" (click)="cerrarRechazar()">Cancelar</button>
+            <button type="submit" class="btn-peligro" [disabled]="guardando() || formularioRechazar.invalid">
+              {{ guardando() ? 'Guardando...' : 'Confirmar rechazo' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</div>

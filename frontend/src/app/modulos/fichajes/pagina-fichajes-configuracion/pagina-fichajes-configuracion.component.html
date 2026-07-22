@@ -1,0 +1,100 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Ajustes</h1>
+    <p>Habilitá el fichaje móvil por empleado y editá el texto de transparencia</p>
+    <nav class="subnav">
+      <a routerLink="/fichajes">Marcas</a>
+      <a routerLink="/fichajes/zonas">Zonas</a>
+      <a routerLink="/fichajes/configuracion" class="activo">Configuración</a>
+    </nav>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-secundario" *tienePermiso="'fichaje.configurar'" (click)="alternarPolitica()">
+      {{ mostrarPolitica() ? 'Cerrar política' : 'Editar política de transparencia' }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (mostrarPolitica()) {
+    <section class="tarjeta-formulario">
+      <h2>Política mostrada al empleado</h2>
+      <form [formGroup]="formularioPolitica" (ngSubmit)="guardarPolitica()">
+        <label class="ancho-completo">
+          Texto de transparencia
+          <textarea rows="10" formControlName="textoTransparencia"></textarea>
+        </label>
+        <label>
+          Precisión máxima GPS (metros)
+          <input type="number" formControlName="precisionMaximaMetros" min="10" max="500" />
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" formControlName="permitirFichajeSinGps" />
+          Permitir fichaje sin GPS (siempre pendiente de revisión)
+        </label>
+        <div class="acciones-formulario">
+          <button type="submit" class="btn-primario" [disabled]="guardando()">Guardar política</button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando…</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Fichaje móvil</th>
+            <th>Solo zonas asignadas</th>
+            <th>Consentimiento</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of configuraciones(); track c.empleadoId) {
+            <tr>
+              <td>{{ c.empleadoNombre }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  *tienePermiso="'fichaje.configurar'"
+                  [disabled]="guardando()"
+                  (click)="toggleMovil(c)"
+                >
+                  {{ c.fichajeMovilHabilitado ? 'Habilitado' : 'Deshabilitado' }}
+                </button>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  *tienePermiso="'fichaje.configurar'"
+                  [disabled]="guardando() || !c.fichajeMovilHabilitado"
+                  (click)="toggleRestringir(c)"
+                >
+                  {{ c.restringirSoloZonasAsignadas ? 'Sí' : 'No' }}
+                </button>
+              </td>
+              <td>
+                @if (c.consentimientoAceptadoAt) {
+                  Aceptado (v{{ c.versionPoliticaAceptada }})
+                } @else if (c.requiereConsentimiento) {
+                  Pendiente
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

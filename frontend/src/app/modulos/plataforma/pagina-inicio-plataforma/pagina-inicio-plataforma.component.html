@@ -1,0 +1,37 @@
+<div class="pagina-inicio-plataforma">
+  <header class="encabezado-pagina">
+    <h1>Empresas</h1>
+    <p>Tu red de empresas en Ligo</p>
+  </header>
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="indicadores" />
+  } @else {
+    <div class="grilla-indicadores">
+      <article class="tarjeta-indicador">
+        <span class="indicador-valor">{{ totalEmpresas() }}</span>
+        <span class="indicador-titulo">Empresas registradas</span>
+      </article>
+      <article class="tarjeta-indicador activa">
+        <span class="indicador-valor">{{ empresasActivas() }}</span>
+        <span class="indicador-titulo">Empresas activas</span>
+      </article>
+    </div>
+
+    <section class="acciones-rapidas">
+      <h2>Acciones</h2>
+      <a routerLink="/plataforma/empresas" class="btn-primario">
+        Ver empresas
+      </a>
+    </section>
+
+    <section class="nota-funcional">
+      <p>
+        Desde aquí podés crear empresas y asignar el primer administrador.
+        El día a día (solicitudes, vacaciones, documentos) lo maneja cada empresa
+        desde su propio espacio. Para ayudar a un cliente, usá <strong>Modo soporte</strong>
+        desde la ficha de una empresa.
+      </p>
+    </section>
+  }
+</div>

@@ -1,0 +1,41 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Avisos</h1>
+    <p>Novedades de tu empresa</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="lista" />
+  } @else {
+    <div class="lista-comunicaciones">
+      @for (c of comunicaciones(); track c.id) {
+        <article class="tarjeta-comunicacion">
+          <header>
+            <h2>{{ c.tituloComunicacion }}</h2>
+            <time>{{ c.fechaPublicacion | date:'dd/MM/yyyy HH:mm' }}</time>
+          </header>
+          <p class="mensaje">{{ c.mensaje }}</p>
+          <footer>
+            <span class="etiqueta">{{ etiquetaEstado(c) }}</span>
+            @if (puedeConfirmar(c)) {
+              <button type="button" class="btn-secundario" (click)="confirmarLectura(c.id)">
+                Confirmar lectura
+              </button>
+            }
+          </footer>
+        </article>
+      } @empty {
+        <div class="estado-vacio">
+          <h2 class="estado-vacio-titulo">Sin comunicaciones</h2>
+          <p class="estado-vacio-descripcion">
+            No hay comunicaciones internas dirigidas a vos por el momento.
+          </p>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,72 @@
+<div class="pagina-detalle-empresa">
+  <a routerLink="/plataforma/empresas" class="enlace-volver">← Volver a empresas</a>
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando empresa...</div>
+  } @else {
+    @if (empresa(); as actual) {
+      <header class="encabezado-pagina">
+        <h1>{{ actual.nombre }}</h1>
+        <p>Datos del tenant, usuarios y acceso a soporte operativo</p>
+        <span class="etiqueta" [class.activo]="actual.estado === 'ACTIVA'">{{ actual.estado }}</span>
+      </header>
+
+      @if (error()) {
+        <div class="estado-error">{{ error() }}</div>
+      }
+      @if (exito()) {
+        <div class="banner-exito">{{ exito() }}</div>
+      }
+
+      <section class="acciones-rapidas">
+        <button type="button" class="btn-secundario" (click)="gestionarUsuarios()">
+          Usuarios
+        </button>
+        <button type="button" class="btn-soporte" (click)="gestionarEmpleados()">
+          Gestionar empleados
+        </button>
+        <button
+          type="button"
+          class="btn-peligro"
+          (click)="desactivarEmpresa()"
+          [disabled]="desactivando()"
+        >
+          {{ desactivando() ? 'Desactivando...' : 'Desactivar empresa' }}
+        </button>
+      </section>
+
+      <section class="tarjeta-formulario">
+        <h2>Editar datos</h2>
+        <form [formGroup]="formularioEditar" (ngSubmit)="guardarCambios()">
+          <div class="grilla-formulario">
+            <label>
+              Nombre *
+              <input formControlName="nombre" />
+            </label>
+            <label>
+              Razón social
+              <input formControlName="razonSocial" />
+            </label>
+            <label>
+              CUIT
+              <input formControlName="cuit" />
+            </label>
+            <label>
+              Correo
+              <input type="email" formControlName="email" />
+            </label>
+            <label>
+              Teléfono
+              <input formControlName="telefono" />
+            </label>
+          </div>
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+        </form>
+      </section>
+    } @else if (error()) {
+      <div class="estado-error">{{ error() }}</div>
+    }
+  }
+</div>

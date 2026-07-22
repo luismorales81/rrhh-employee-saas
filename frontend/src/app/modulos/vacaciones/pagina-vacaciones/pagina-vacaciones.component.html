@@ -1,0 +1,665 @@
+<div class="pagina">
+
+  <header class="encabezado-pagina">
+
+    <h1>Vacaciones</h1>
+
+    <p>Saldos, pedidos y aprobaciones</p>
+
+  </header>
+
+
+
+  <div class="pestanas">
+
+    <button type="button" [class.activa]="pestanaActiva() === 'bandeja'" (click)="cambiarPestana('bandeja')">Bandeja</button>
+
+    <button type="button" [class.activa]="pestanaActiva() === 'saldos'" (click)="cambiarPestana('saldos')">Saldos</button>
+
+    <button type="button" [class.activa]="pestanaActiva() === 'calendario'" (click)="cambiarPestana('calendario')">Calendario</button>
+
+    <button type="button" [class.activa]="pestanaActiva() === 'politicas'" (click)="cambiarPestana('politicas')">Políticas</button>
+
+    <button type="button" *tienePermiso="'vacacion.configurar'" [class.activa]="pestanaActiva() === 'configuracion'" (click)="cambiarPestana('configuracion')">Configuración</button>
+
+    <button type="button" *tienePermiso="'vacacion.patron.gestionar'" [class.activa]="pestanaActiva() === 'patron-descanso'" (click)="cambiarPestana('patron-descanso')">Patrón descanso</button>
+
+  </div>
+
+
+
+  @if (pestanaActiva() === 'politicas') {
+
+    <div class="barra-herramientas con-accion-principal" *tienePermiso="'vacacion.politica.gestionar'">
+
+      <span></span>
+
+      <button type="button" class="btn-primario" (click)="mostrarFormularioPolitica.set(!mostrarFormularioPolitica())">
+
+        {{ mostrarFormularioPolitica() ? 'Cancelar' : 'Nueva política' }}
+
+      </button>
+
+    </div>
+
+    @if (mostrarFormularioPolitica()) {
+
+      <section class="tarjeta-formulario">
+
+        <h2>Crear política de vacaciones</h2>
+
+        <form [formGroup]="formularioPolitica" (ngSubmit)="crearPolitica()">
+
+          <div class="grilla-formulario">
+
+            <label>Nombre *<input formControlName="nombre" /></label>
+
+            <label>Descripción<input formControlName="descripcion" /></label>
+
+            <label>Años mínimos *<input type="number" formControlName="aniosMinimos" /></label>
+
+            <label>Años máximos<input type="number" formControlName="aniosMaximos" placeholder="Sin límite" /></label>
+
+            <label>Días otorgados *<input type="number" formControlName="diasOtorgados" /></label>
+
+          </div>
+
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+
+            {{ guardando() ? 'Creando...' : 'Crear y activar' }}
+
+          </button>
+
+        </form>
+
+      </section>
+
+    }
+
+  }
+
+
+
+  @if (error()) {
+
+    <div class="estado-error">{{ error() }}</div>
+
+  }
+
+
+
+  @if (cargando() && necesitaCargaInicial()) {
+
+    <div class="estado-carga">Cargando...</div>
+
+  } @else if (pestanaActiva() === 'bandeja') {
+
+    <div class="barra-herramientas barra-filtros">
+
+      <select [value]="filtroEstado()" (change)="cambiarFiltroEstado($any($event.target).value)">
+
+        <option value="">Todos los estados</option>
+
+        <option value="EN_REVISION">En revisión</option>
+
+        <option value="APROBADO">Aprobado</option>
+
+        <option value="CAMBIOS_SOLICITADOS">Contrapropuesta</option>
+
+        <option value="RECHAZADO">Rechazado</option>
+
+        <option value="CANCELADO">Cancelado</option>
+
+      </select>
+
+    </div>
+
+
+
+    <div class="tabla-contenedor">
+
+      <table class="tabla-datos">
+
+        <thead>
+
+          <tr>
+
+            <th>Empleado</th>
+
+            <th>Desde</th>
+
+            <th>Hasta</th>
+
+            <th>Días</th>
+
+            <th>Estado</th>
+
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          @for (s of solicitudes(); track s.solicitudVacacionesId) {
+
+            <tr [class.fila-seleccionada]="filaSeleccionada(s.solicitudVacacionesId)">
+
+              <td>{{ s.empleadoNombre }}</td>
+
+              <td>{{ s.fechaInicio | date:'dd/MM/yyyy' }}</td>
+
+              <td>{{ s.fechaFin | date:'dd/MM/yyyy' }}</td>
+
+              <td>{{ s.diasSolicitados }}</td>
+
+              <td><span class="etiqueta">{{ s.estado }}</span></td>
+
+              <td>
+
+                <button type="button" class="btn-accion" (click)="abrirDetalle(s.solicitudVacacionesId)">Ver detalle</button>
+
+              </td>
+
+            </tr>
+
+          } @empty {
+
+            <tr><td colspan="6" class="sin-datos">No hay solicitudes de vacaciones</td></tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+
+    @if (detalle(); as d) {
+
+      <section class="tarjeta-formulario" style="margin-top: 1.5rem">
+
+        <div class="barra-herramientas con-accion-principal">
+
+          <h2>Detalle — {{ d.solicitud.empleadoNombre }}</h2>
+
+          <button type="button" class="btn-secundario" (click)="cerrarDetalle()">Cerrar</button>
+
+        </div>
+
+
+
+        <p>
+
+          Solicitado: {{ d.solicitud.fechaInicio | date:'dd/MM/yyyy' }}
+
+          → {{ d.solicitud.fechaFin | date:'dd/MM/yyyy' }}
+
+          ({{ d.solicitud.diasSolicitados }} días)
+
+        </p>
+
+        @if (d.solicitud.motivo) {
+
+          <p><strong>Motivo:</strong> {{ d.solicitud.motivo }}</p>
+
+        }
+
+
+
+        <div class="tarjeta-formulario">
+
+          <h3>Validación automática</h3>
+
+          <p>
+
+            Fecha inicio LCT:
+
+            @if (d.fechaInicioValida) {
+
+              <span class="etiqueta">Válida</span>
+
+            } @else {
+
+              <span class="etiqueta">Inválida</span>
+
+              @if (d.fechaInicioSugerida) {
+
+                — Sugerida: {{ d.fechaInicioSugerida | date:'dd/MM/yyyy' }}
+
+              }
+
+            }
+
+          </p>
+
+          @if (d.motivoFechaInicio) {
+
+            <p class="ayuda-formulario">{{ d.motivoFechaInicio }}</p>
+
+          }
+
+          @if (d.erroresValidacion.length) {
+
+            <div class="estado-error">
+
+              <strong>Errores:</strong>
+
+              <ul>
+
+                @for (e of d.erroresValidacion; track e) {
+
+                  <li>{{ e }}</li>
+
+                }
+
+              </ul>
+
+            </div>
+
+          }
+
+          @if (d.advertenciasValidacion.length) {
+
+            <div class="estado-carga">
+
+              <strong>Advertencias:</strong>
+
+              <ul>
+
+                @for (a of d.advertenciasValidacion; track a) {
+
+                  <li>{{ a }}</li>
+
+                }
+
+              </ul>
+
+            </div>
+
+          }
+
+        </div>
+
+
+
+        @if (puedeGestionar(d)) {
+
+          <div *tienePermiso="'vacacion.aprobar'" class="grilla-formulario" style="margin-top: 1rem">
+
+            <section class="tarjeta-formulario">
+
+              <h3>Aprobar</h3>
+
+              <form [formGroup]="formularioAprobar" (ngSubmit)="aprobarSolicitud()">
+
+                <label>Fecha inicio aprobada<input type="date" formControlName="fechaInicioAprobada" /></label>
+
+                <label>Fecha fin aprobada<input type="date" formControlName="fechaFinAprobada" /></label>
+
+                <label class="ancho-completo">Comentarios<textarea formControlName="comentarios" rows="2"></textarea></label>
+
+                <button type="submit" class="btn-accion aprobar" [disabled]="guardando()">Aprobar</button>
+
+              </form>
+
+            </section>
+
+
+
+            <section class="tarjeta-formulario">
+
+              <h3>Contrapropuesta</h3>
+
+              <form [formGroup]="formularioContrapropuesta" (ngSubmit)="contraproponerSolicitud()">
+
+                <label>Fecha inicio<input type="date" formControlName="fechaInicioContrapropuesta" /></label>
+
+                <label>Fecha fin<input type="date" formControlName="fechaFinContrapropuesta" /></label>
+
+                <label class="ancho-completo">Motivo *<textarea formControlName="motivo" rows="2"></textarea></label>
+
+                <button type="submit" class="btn-accion" [disabled]="guardando()">Contrapropuesta</button>
+
+              </form>
+
+            </section>
+
+
+
+            <section class="tarjeta-formulario">
+
+              <h3>Rechazar</h3>
+
+              <form [formGroup]="formularioRechazar" (ngSubmit)="rechazarSolicitud()">
+
+                <label class="ancho-completo">Motivo rechazo *<textarea formControlName="motivoRechazo" rows="2"></textarea></label>
+
+                <button type="submit" class="btn-accion rechazar" [disabled]="guardando()">Rechazar</button>
+
+              </form>
+
+            </section>
+
+          </div>
+
+        }
+
+      </section>
+
+    }
+
+  } @else if (pestanaActiva() === 'calendario') {
+
+    <app-calendario-vacaciones
+
+      [eventos]="eventosCalendario()"
+
+      [mostrarEmpleado]="true"
+
+      (rangoMesCambiado)="alCambiarMesCalendario($event)"
+
+    />
+
+  } @else if (pestanaActiva() === 'saldos') {
+
+    <div class="tabla-contenedor">
+
+      <table class="tabla-datos">
+
+        <thead>
+
+          <tr>
+
+            <th>Empleado</th>
+
+            <th>Año</th>
+
+            <th>Política</th>
+
+            <th>Total</th>
+
+            <th>Disponibles</th>
+
+            <th>Pendientes</th>
+
+            <th>Tomados</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          @for (s of saldos(); track s.empleadoId + '-' + s.anio) {
+
+            <tr>
+
+              <td>{{ s.empleadoNombre }}</td>
+
+              <td>{{ s.anio }}</td>
+
+              <td>{{ s.politicaNombre }}</td>
+
+              <td>{{ s.diasTotales }}</td>
+
+              <td>{{ s.diasDisponibles }}</td>
+
+              <td>{{ s.diasPendientes }}</td>
+
+              <td>{{ s.diasTomados }}</td>
+
+            </tr>
+
+          } @empty {
+
+            <tr><td colspan="7" class="sin-datos">No hay saldos registrados</td></tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  } @else if (pestanaActiva() === 'configuracion') {
+
+    <section class="tarjeta-formulario" *tienePermiso="'vacacion.configurar'">
+
+      <h2>Configuración de vacaciones (empresa)</h2>
+
+      @if (configuracion(); as cfg) {
+
+        <p class="ayuda-formulario">Fracción mínima efectiva: {{ cfg.diasMinimosFraccionEfectivos }} días (piso legal: 7)</p>
+
+      }
+
+      <form [formGroup]="formularioConfiguracion" (ngSubmit)="guardarConfiguracion()">
+
+        <div class="grilla-formulario">
+
+          <label>Días mínimos por fracción *<input type="number" formControlName="diasMinimosFraccion" min="7" /></label>
+
+          <label>Anticipación mínima (días) *<input type="number" formControlName="anticipacionMinimaDias" min="0" /></label>
+
+          <label class="ancho-completo">
+
+            <input type="checkbox" formControlName="permiteSolicitudSinSaldo" />
+
+            Permitir solicitud sin saldo disponible
+
+          </label>
+
+        </div>
+
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+
+          {{ guardando() ? 'Guardando...' : 'Guardar configuración' }}
+
+        </button>
+
+      </form>
+
+    </section>
+
+  } @else if (pestanaActiva() === 'patron-descanso') {
+
+    <section class="tarjeta-formulario">
+
+      <h2>Patrón de descanso por empleado</h2>
+
+      <p class="ayuda-formulario">Art. 151 LCT: las vacaciones deben comenzar el día siguiente al bloque de descanso.</p>
+
+      <form [formGroup]="formularioPatron" (ngSubmit)="crearPatronDescanso()">
+
+        <div class="grilla-formulario">
+
+          <label class="ancho-completo">
+
+            Empleado *
+
+            <app-buscador-empleado formControlName="empleadoId" [empleados]="empleados()" />
+
+          </label>
+
+          <label>Vigencia desde *<input type="date" formControlName="vigenciaDesde" /></label>
+
+          <label>Vigencia hasta<input type="date" formControlName="vigenciaHasta" /></label>
+
+          <div class="ancho-completo">
+
+            <span class="etiqueta-campo">Días de descanso *</span>
+
+            <div class="selector-dias-descanso">
+
+              @for (dia of diasSemana; track dia.valor) {
+
+                <button
+
+                  type="button"
+
+                  class="btn-secundario"
+
+                  [class.activa]="diaPatronActivo(dia.valor)"
+
+                  (click)="alternarDiaPatron(dia.valor)"
+
+                >
+
+                  {{ dia.etiqueta }}
+
+                </button>
+
+              }
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+
+          {{ guardando() ? 'Guardando...' : 'Crear patrón' }}
+
+        </button>
+
+      </form>
+
+
+
+      @if (formularioPatron.controls.empleadoId.value) {
+
+        <h3 class="subtitulo-seccion">Patrones registrados</h3>
+
+        @if (patrones().length) {
+
+          <div class="tabla-contenedor">
+
+            <table class="tabla-datos">
+
+              <thead>
+
+                <tr>
+
+                  <th>Vigencia desde</th>
+
+                  <th>Vigencia hasta</th>
+
+                  <th>Días de descanso</th>
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                @for (p of patrones(); track p.id) {
+
+                  <tr>
+
+                    <td>{{ p.vigenciaDesde | date:'dd/MM/yyyy' }}</td>
+
+                    <td>{{ p.vigenciaHasta ? (p.vigenciaHasta | date:'dd/MM/yyyy') : 'Vigente' }}</td>
+
+                    <td>{{ etiquetaDiasPatron(p.diasDescanso) }}</td>
+
+                  </tr>
+
+                }
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        } @else {
+
+          <p class="estado-vacio-inline">Este empleado aún no tiene patrones registrados.</p>
+
+        }
+
+      } @else {
+
+        <p class="estado-vacio-inline">Seleccioná un empleado para ver o crear su patrón de descanso.</p>
+
+      }
+
+    </section>
+
+  } @else {
+
+    <div class="tabla-contenedor">
+
+      <table class="tabla-datos">
+
+        <thead>
+
+          <tr>
+
+            <th>Nombre</th>
+
+            <th>Descripción</th>
+
+            <th>Activa</th>
+
+            <th>Rangos</th>
+
+            <th>Acciones</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          @for (p of politicas(); track p.id) {
+
+            <tr>
+
+              <td>{{ p.nombre }}</td>
+
+              <td>{{ p.descripcion ?? '—' }}</td>
+
+              <td>{{ p.activa ? 'Sí' : 'No' }}</td>
+
+              <td>{{ p.rangos.length }}</td>
+
+              <td>
+
+                @if (!p.activa) {
+
+                  <button type="button" class="btn-accion aprobar" (click)="activarPolitica(p.id)">Activar</button>
+
+                } @else {
+
+                  —
+
+                }
+
+              </td>
+
+            </tr>
+
+          } @empty {
+
+            <tr><td colspan="5" class="sin-datos">No hay políticas configuradas</td></tr>
+
+          }
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  }
+
+</div>
+
+

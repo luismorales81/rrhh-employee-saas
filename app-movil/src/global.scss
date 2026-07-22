@@ -1,0 +1,220 @@
+/* Estilos globales Ionic + design system RRHH */
+@import '@ionic/angular/css/core.css';
+@import '@ionic/angular/css/normalize.css';
+@import '@ionic/angular/css/structure.css';
+@import '@ionic/angular/css/typography.css';
+@import '@ionic/angular/css/display.css';
+@import '@ionic/angular/css/padding.css';
+@import '@ionic/angular/css/float-elements.css';
+@import '@ionic/angular/css/text-alignment.css';
+@import '@ionic/angular/css/text-transformation.css';
+@import '@ionic/angular/css/flex-utils.css';
+@import './theme/variables.scss';
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--fuente-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+ion-app {
+  height: 100%;
+}
+
+ion-content {
+  --background: var(--color-fondo);
+}
+
+ion-content.pagina-fondo,
+.contenido-inicio,
+.contenido-panel {
+  --background: var(--color-fondo);
+}
+
+// Encabezados blancos (como portal web empleado), no barra azul/verde sólida
+ion-header ion-toolbar {
+  --background: var(--color-superficie);
+  --color: var(--color-texto);
+  --border-width: 0 0 1px 0;
+  --border-color: var(--color-borde-suave);
+  --min-height: 56px;
+}
+
+ion-title {
+  font-weight: 600;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+}
+
+ion-button {
+  --border-radius: var(--radio-md);
+  --min-height: 52px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+ion-item {
+  --border-radius: var(--radio-md);
+}
+
+.encabezado-saludo {
+  margin-bottom: var(--espacio-5);
+
+  h1 {
+    margin: 0 0 var(--espacio-1);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-texto);
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: 0.9375rem;
+  }
+}
+
+.lista-tarjetas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.grupo-lista-titulo {
+  margin: var(--espacio-4) 0 var(--espacio-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-texto-terciario);
+}
+
+.grilla-metricas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espacio-3);
+}
+
+ion-fab {
+  margin-bottom: var(--espacio-2);
+}
+
+ion-modal.overlay-hidden {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.ion-page.ion-page-hidden {
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+app-layout-tabs,
+app-layout-tabs-rrhh {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .area-contenido-tabs {
+    flex: 1 1 0;
+    min-height: 0;
+    position: relative;
+    width: 100%;
+  }
+}
+
+.barra-tabs-inferior {
+  flex: 0 0 auto;
+  z-index: 10;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  background: var(--color-superficie);
+  border-top: 1px solid var(--color-borde);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  min-height: 56px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: var(--espacio-1) var(--espacio-2);
+  text-decoration: none;
+  color: var(--color-texto-terciario);
+  font-size: 0.625rem;
+  font-weight: 500;
+  max-width: 5.5rem;
+  border-radius: var(--radio-md);
+  transition: color 0.12s;
+
+  ion-icon {
+    font-size: 1.35rem;
+  }
+
+  ion-label {
+    margin: 0;
+    font-size: 0.625rem;
+  }
+
+  &.activo {
+    color: var(--color-primario);
+    font-weight: 600;
+  }
+}
+
+// ——— Skeletons ———
+
+@keyframes esqueleto-brillo {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.esqueleto-linea {
+  height: 0.875rem;
+  border-radius: var(--radio-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-superficie-secundaria) 0%,
+    var(--color-borde) 50%,
+    var(--color-superficie-secundaria) 100%
+  );
+  background-size: 200% 100%;
+  animation: esqueleto-brillo 1.5s ease-in-out infinite;
+  margin-bottom: var(--espacio-2);
+}
+
+.esqueleto-tarjeta-carga {
+  background: var(--color-superficie);
+  border-radius: var(--radio-lg);
+  padding: var(--espacio-4) var(--espacio-5);
+  border: 1px solid var(--color-borde-suave);
+  min-height: 88px;
+}
+
+.esqueleto-grilla-metricas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espacio-3);
+}
+
+// Toasts Ligo
+.toast-ligo {
+  --border-radius: 12px;
+  font-weight: 600;
+}
+
+.chip-accion:active,
+.card-pendiente:active,
+.fila:active {
+  transform: scale(0.985);
+  transition: transform 120ms ease;
+}

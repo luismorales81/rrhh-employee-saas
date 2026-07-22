@@ -1,0 +1,84 @@
+<div class="pagina">
+  @if (esVistaPlataforma()) {
+    <a routerLink="/plataforma/empresas" class="enlace-volver">← Volver a empresas</a>
+  }
+
+  <header class="encabezado-pagina">
+    <h1>Usuarios</h1>
+    <p>Quiénes pueden entrar a Ligo</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-primario" (click)="alternarFormulario()">
+      {{ mostrarFormulario() ? 'Cancelar' : 'Nuevo usuario' }}
+    </button>
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>Alta de usuario</h2>
+      <form [formGroup]="formularioCrear" (ngSubmit)="crearUsuario()">
+        <div class="grilla-formulario">
+          <label>Correo *<input type="email" formControlName="email" /></label>
+          <label>Contraseña *<input type="password" formControlName="password" /></label>
+        </div>
+
+        <fieldset class="grupo-roles">
+          <legend>Roles *</legend>
+          <div class="lista-roles">
+            @for (rol of roles(); track rol.id) {
+              <label class="checkbox">
+                <input
+                  type="checkbox"
+                  [checked]="rolMarcado(rol.id)"
+                  (change)="alternarRol(rol.id)"
+                />
+                {{ rol.nombre }}
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Crear usuario' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando usuarios...</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Correo</th>
+            <th>Roles</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuarios(); track u.id) {
+            <tr>
+              <td>{{ u.email }}</td>
+              <td>{{ u.roles.join(', ') || '—' }}</td>
+              <td>
+                <span class="etiqueta" [class.activo]="u.activo">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="3" class="sin-datos">No hay usuarios registrados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

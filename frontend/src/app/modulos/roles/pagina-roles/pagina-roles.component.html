@@ -1,0 +1,84 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Roles</h1>
+    <p>Qué puede hacer cada persona</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <ng-container *tienePermiso="'rol.crear'">
+      <button type="button" class="btn-primario" (click)="alternarFormulario()">
+        {{ mostrarFormulario() ? 'Cancelar' : 'Nuevo rol' }}
+      </button>
+    </ng-container>
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>{{ tituloFormulario() }}</h2>
+      <form [formGroup]="formularioRol" (ngSubmit)="guardarRol()">
+        <div class="grilla-formulario">
+          <label>Nombre *<input formControlName="nombre" /></label>
+          <label>Descripción<input formControlName="descripcion" /></label>
+        </div>
+        <fieldset class="lista-permisos">
+          <legend>Permisos *</legend>
+          <div class="grilla-permisos">
+            @for (permiso of permisos(); track permiso.id) {
+              <label class="checkbox-permiso">
+                <input
+                  type="checkbox"
+                  [checked]="permisoMarcado(permiso.id)"
+                  (change)="alternarPermiso(permiso.id)"
+                />
+                <span>{{ permiso.codigo }}</span>
+                <small>{{ permiso.descripcion }}</small>
+              </label>
+            }
+          </div>
+        </fieldset>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Guardar rol' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando roles...</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Permisos</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (rol of roles(); track rol.id) {
+            <tr>
+              <td>{{ rol.nombre }}</td>
+              <td>{{ rol.descripcion || '—' }}</td>
+              <td>{{ rol.permisos.length }}</td>
+              <td class="celda-acciones">
+                <ng-container *tienePermiso="'rol.crear'">
+                  <button type="button" class="btn-accion" (click)="editarRol(rol)">Editar</button>
+                  <button type="button" class="btn-accion btn-peligro" (click)="eliminarRol(rol)">Eliminar</button>
+                </ng-container>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="sin-datos">No hay roles registrados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

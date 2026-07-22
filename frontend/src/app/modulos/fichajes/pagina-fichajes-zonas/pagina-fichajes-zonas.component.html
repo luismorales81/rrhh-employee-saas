@@ -1,0 +1,198 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Zonas</h1>
+    <p>Definí en el mapa dónde puede fichar tu equipo</p>
+    <nav class="subnav">
+      <a routerLink="/fichajes">Marcas</a>
+      <a routerLink="/fichajes/zonas" class="activo">Zonas</a>
+      <a routerLink="/fichajes/configuracion">Configuración</a>
+    </nav>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-primario" *tienePermiso="'fichaje.zona.gestionar'" (click)="alternarFormulario()">
+      {{ mostrarFormulario() ? 'Cancelar' : 'Nueva zona' }}
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>{{ zonaEditando() ? 'Editar zona' : 'Nueva zona' }}</h2>
+      <form [formGroup]="formularioZona" (ngSubmit)="guardarZona()">
+        <div class="grilla-formulario">
+          <label>
+            Nombre *
+            <input formControlName="nombre" />
+          </label>
+          <label>
+            Alcance
+            <select formControlName="alcance">
+              <option value="GLOBAL">Global (todos con fichaje móvil)</option>
+              <option value="ASIGNADA">Asignada (solo destinatarios)</option>
+            </select>
+          </label>
+          <label class="ancho-completo">
+            Descripción
+            <input formControlName="descripcion" />
+          </label>
+          <label class="checkbox-inline">
+            <input type="checkbox" formControlName="activa" /> Zona activa
+          </label>
+        </div>
+        <p class="ayuda-mapa">
+          La zona se define desde tu ubicación actual o haciendo clic en el mapa.
+          @if (coordenadasDibujadas().length) {
+            <span> — {{ coordenadasDibujadas().length }} vértices</span>
+          }
+        </p>
+        <div class="herramientas-mapa">
+          <button
+            type="button"
+            class="btn-secundario"
+            [disabled]="obteniendoUbicacion()"
+            (click)="usarMiUbicacion()">
+            {{ obteniendoUbicacion() ? 'Obteniendo ubicación…' : 'Usar mi ubicación' }}
+          </button>
+          @if (!modoDibujoManual()) {
+            <label class="control-radio">
+              Radio (m)
+              <input
+                type="number"
+                min="30"
+                max="2000"
+                step="10"
+                [value]="radioMetros()"
+                (change)="radioMetros.set(+$any($event.target).value); actualizarRadioZona()" />
+            </label>
+            <button type="button" class="btn-secundario" (click)="activarDibujoManual()">
+              Dibujar polígono manual
+            </button>
+          } @else {
+            <span class="indicador-modo">Modo manual: hacé clic en el mapa para agregar vértices</span>
+            <button type="button" class="btn-secundario" (click)="limpiarPoligono()">Limpiar</button>
+            <button type="button" class="btn-secundario" (click)="usarMiUbicacion()">Volver a mi ubicación</button>
+          }
+        </div>
+        <div class="acciones-formulario">
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            {{ guardando() ? 'Guardando…' : 'Guardar zona' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <div class="mapa-contenedor" #contenedorMapa></div>
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando zonas…</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Alcance</th>
+            <th>Estado</th>
+            <th>Asignaciones</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (zona of zonas(); track zona.id) {
+            <tr>
+              <td>{{ zona.nombre }}</td>
+              <td>{{ zona.alcance === 'GLOBAL' ? 'Global' : 'Asignada' }}</td>
+              <td>{{ zona.activa ? 'Activa' : 'Inactiva' }}</td>
+              <td>
+                @if (zona.alcance === 'ASIGNADA') {
+                  <ul class="lista-asignaciones">
+                    @for (a of zona.asignaciones; track a.id) {
+                      <li>
+                        {{ a.empleadoNombre ?? a.sectorNombre ?? a.areaNombre ?? a.gerenciaNombre }}
+                        <button type="button" class="btn-link" (click)="quitarAsignacion(zona, a.id)">×</button>
+                      </li>
+                    }
+                  </ul>
+                  <button type="button" class="btn-secundario" (click)="abrirAsignacion(zona)">+ Agregar destinatario</button>
+                } @else {
+                  —
+                }
+              </td>
+              <td>
+                <button type="button" class="btn-secundario" (click)="alternarFormulario(zona)">Editar</button>
+                <button type="button" class="btn-peligro" (click)="eliminarZona(zona)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (zonaAsignacion()) {
+    <div class="modal-overlay" (click)="cerrarAsignacion()">
+      <div class="modal-contenido" (click)="$event.stopPropagation()">
+        <h3>Agregar destinatario a {{ zonaAsignacion()!.nombre }}</h3>
+        <p class="texto-ayuda-modal">
+          Podés asignar un sector completo (ej. Ventas) o un empleado individual. Buscá por nombre en lugar de recorrer un listado largo.
+        </p>
+        <form [formGroup]="formularioAsignacion" (ngSubmit)="agregarAsignacion()">
+          <div class="grilla-formulario">
+            <label class="ancho-completo">
+              Tipo de destinatario
+              <select formControlName="tipoDestino">
+                @for (tipo of tiposDestinoAsignacion; track tipo.valor) {
+                  <option [value]="tipo.valor">{{ tipo.etiqueta }}</option>
+                }
+              </select>
+            </label>
+            <label class="ancho-completo">
+              @if (esAsignacionEmpleado()) {
+                Empleado
+                <app-buscador-empleado
+                  formControlName="referenciaId"
+                  [empleados]="empleadosParaAsignacion()"
+                  placeholder="Buscar por nombre, legajo o DNI..."
+                />
+              } @else if (esAsignacionSector()) {
+                Sector
+                <app-buscador-opcion
+                  formControlName="referenciaId"
+                  [opciones]="opcionesSectoresDisponibles()"
+                  placeholder="Buscar sector (ej. Ventas)..."
+                  textoAyuda="Incluye a todos los empleados del sector"
+                />
+              } @else if (esAsignacionArea()) {
+                Área
+                <app-buscador-opcion
+                  formControlName="referenciaId"
+                  [opciones]="opcionesAreasDisponibles()"
+                  placeholder="Buscar área..."
+                  textoAyuda="Incluye a todos los empleados del área"
+                />
+              } @else if (esAsignacionGerencia()) {
+                Gerencia
+                <app-buscador-opcion
+                  formControlName="referenciaId"
+                  [opciones]="opcionesGerenciasDisponibles()"
+                  placeholder="Buscar gerencia..."
+                  textoAyuda="Incluye a todos los empleados de la gerencia"
+                />
+              }
+            </label>
+          </div>
+          <div class="acciones-formulario">
+            <button type="button" class="btn-secundario" (click)="cerrarAsignacion()">Cancelar</button>
+            <button type="submit" class="btn-primario">Agregar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

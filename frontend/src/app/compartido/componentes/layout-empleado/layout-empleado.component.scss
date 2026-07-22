@@ -1,0 +1,129 @@
+.layout-empleado {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-fondo);
+}
+
+.encabezado-empleado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--espacio-4) var(--espacio-5);
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde-suave);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.marca-empleado {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.marca-logo {
+  display: block;
+  flex-shrink: 0;
+}
+
+.marca-texto {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-texto);
+  letter-spacing: -0.01em;
+}
+
+.contenido-empleado {
+  flex: 1;
+  padding: var(--espacio-5) var(--espacio-4);
+  padding-bottom: 5.5rem;
+  max-width: var(--ancho-portal-empleado);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.navegacion-inferior {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: var(--color-superficie);
+  border-top: 1px solid var(--color-borde);
+  padding: var(--espacio-2) 0 calc(var(--espacio-2) + env(safe-area-inset-bottom));
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.acciones-encabezado {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+}
+
+.btn-icono-header {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: var(--radio-md);
+  background: transparent;
+  color: var(--color-texto-secundario);
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover,
+  &.activo {
+    background: var(--color-primario-suave);
+    color: var(--color-primario);
+  }
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  text-decoration: none;
+  color: var(--color-texto-terciario);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: var(--espacio-1) var(--espacio-2);
+  min-width: 3.5rem;
+  border-radius: var(--radio-md);
+  transition: color 0.12s;
+
+  &.activo {
+    color: var(--color-primario);
+
+    .nav-icono {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.nav-icono {
+  line-height: 1;
+}
+
+.nav-etiqueta {
+  max-width: 4.5rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.usuario-email {
+  font-size: 0.75rem;
+  color: var(--color-texto-terciario);
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

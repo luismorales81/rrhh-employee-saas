@@ -1,0 +1,14 @@
+# Perfil desarrollo local — activar con: --spring.profiles.active=dev
+# O por defecto si spring.profiles.default=dev en application.yml
+
+spring:
+  datasource:
+    password: rrhh_secret
+
+app:
+  jwt:
+    secreto: rrhh-saas-jwt-secreto-desarrollo-cambiar-en-produccion-minimo-256-bits
+
+logging:
+  level:
+    com.rrhh.saas: DEBUG

@@ -1,0 +1,73 @@
+.checklist-progreso {
+  margin-bottom: var(--espacio-4);
+  font-size: 0.875rem;
+  color: var(--color-texto-secundario);
+}
+
+.barra-progreso {
+  height: 8px;
+  background: var(--color-superficie-secundaria);
+  border-radius: var(--radio-completo);
+  overflow: hidden;
+  margin-top: var(--espacio-2);
+}
+
+.barra-progreso-relleno {
+  height: 100%;
+  background: var(--color-primario);
+  transition: width 0.2s;
+}
+
+.lista-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.item-checklist {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espacio-4);
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--color-fondo);
+  border-radius: var(--radio-md);
+  border: 1px solid var(--color-borde-suave);
+}
+
+.item-checklist.completada {
+  opacity: 0.85;
+  background: var(--color-primario-suave);
+  border-color: var(--color-primario-borde);
+}
+
+.item-checklist-info strong {
+  display: block;
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.item-checklist-meta {
+  font-size: 0.75rem;
+  color: var(--color-texto-secundario);
+}
+
+.seccion-legajo {
+  margin-top: var(--espacio-6);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.seccion-legajo h3 {
+  margin: 0 0 var(--espacio-4);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-texto-terciario);
+}

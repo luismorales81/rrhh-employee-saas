@@ -1,0 +1,97 @@
+<div class="pagina">
+  <ui-migas [items]="migas" />
+  <header class="encabezado-pagina">
+    <h1>Aprobaciones</h1>
+    <p>Pedidos de tu equipo que esperan una respuesta</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando…</div>
+  } @else if (pendientes().length === 0) {
+    <ui-estado-vacio
+      titulo="Sin pendientes"
+      descripcion="Cuando alguien de tu equipo pida algo, aparecerá aquí."
+      icono="✓"
+    >
+      <a routerLink="/equipo" class="btn-secundario">Volver a Mi equipo</a>
+    </ui-estado-vacio>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Persona</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of pendientes(); track s.id) {
+            <tr>
+              <td>{{ s.empleadoNombre ?? 'Persona' }}</td>
+              <td>{{ s.tipoSolicitudNombre }}</td>
+              <td>
+                <ui-insignia [variante]="variante(s.estado)">{{ etiquetaEstado(s.estado) }}</ui-insignia>
+              </td>
+              <td>{{ s.createdAt | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <button type="button" class="btn-accion" (click)="abrirDetalle(s)">Revisar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <ui-cajon
+    [abierto]="cajonAbierto()"
+    [titulo]="seleccionada()?.tipoSolicitudNombre ?? 'Solicitud'"
+    [subtitulo]="seleccionada()?.empleadoNombre ?? ''"
+    (cerrar)="cerrarCajon()"
+  >
+    @if (seleccionada(); as s) {
+      <dl class="grilla-perfil">
+        <div>
+          <dt>Estado</dt>
+          <dd>
+            <ui-insignia [variante]="variante(s.estado)">{{ etiquetaEstado(s.estado) }}</ui-insignia>
+          </dd>
+        </div>
+        <div>
+          <dt>Motivo</dt>
+          <dd>{{ s.motivo ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ s.createdAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      </dl>
+
+      @if (esVacaciones(s)) {
+        <p class="ayuda-formulario">
+          Las vacaciones se gestionan en
+          <a routerLink="/vacaciones" [queryParams]="{ solicitud: s.solicitudVacacionesId }">Vacaciones</a>.
+        </p>
+      }
+    }
+    <ng-container pie>
+      @if (seleccionada(); as s) {
+        @if (!esVacaciones(s) && s.estado === 'EN_REVISION') {
+          <ng-container *tienePermiso="'solicitud.rechazar'">
+            <ui-boton variante="peligro" (pulsado)="rechazar(s.id)">Rechazar</ui-boton>
+          </ng-container>
+          <ng-container *tienePermiso="'solicitud.aprobar'">
+            <ui-boton (pulsado)="aprobar(s.id)">Aprobar</ui-boton>
+          </ng-container>
+        }
+      }
+    </ng-container>
+  </ui-cajon>
+</div>

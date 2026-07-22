@@ -1,0 +1,78 @@
+<div class="layout">
+  <aside class="barra-lateral">
+    <div class="marca">
+      <img class="marca-logo" src="assets/marca/ligo-logo.svg" alt="Ligo" width="132" height="34" />
+    </div>
+
+    <button type="button" class="atajo-buscar" (click)="abrirPaleta()">
+      <span>Buscar…</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+
+    <nav class="menu">
+      @if (esSupervisor()) {
+        @for (item of itemsSupervisor(); track item.ruta) {
+          <a class="menu-item" [routerLink]="item.ruta" routerLinkActive="activo">
+            <app-icono-menu class="menu-icono" [nombre]="item.icono" />
+            <span>{{ item.etiqueta }}</span>
+          </a>
+        }
+      } @else {
+        @for (seccion of seccionesMenu(); track seccion.id) {
+          <div class="menu-seccion">
+            <button
+              type="button"
+              class="menu-seccion__titulo"
+              (click)="alternarSeccion(seccion.id)"
+              [attr.aria-expanded]="seccionAbierta(seccion)"
+            >
+              {{ seccion.etiqueta }}
+              <span class="menu-seccion__chevron" [class.cerrado]="!seccionAbierta(seccion)">▾</span>
+            </button>
+            @if (seccionAbierta(seccion)) {
+              @for (item of seccion.items; track item.ruta) {
+                <a
+                  class="menu-item"
+                  [routerLink]="item.ruta"
+                  routerLinkActive="activo"
+                  [routerLinkActiveOptions]="{ exact: item.ruta === '/panel' || item.ruta === '/equipo' }"
+                >
+                  <app-icono-menu class="menu-icono" [nombre]="item.icono" />
+                  <span>{{ item.etiqueta }}</span>
+                </a>
+              }
+            }
+          </div>
+        }
+      }
+    </nav>
+
+    <div class="pie-barra">
+      <div class="usuario">
+        <span class="usuario-email">{{ servicioAutenticacion.sesionActual()?.email }}</span>
+        @if (servicioContextoEmpresa.modoSoporte() && servicioContextoEmpresa.empresaSeleccionadaNombre()) {
+          <span class="empresa-activa">
+            {{ servicioContextoEmpresa.empresaSeleccionadaNombre() }}
+          </span>
+        }
+      </div>
+      <button type="button" class="btn-cerrar" (click)="cerrarSesion()">
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="contenido">
+    @if (servicioContextoEmpresa.modoSoporte()) {
+      <div class="banner-soporte">
+        <span>
+          Modo soporte — {{ servicioContextoEmpresa.empresaSeleccionadaNombre() }}
+        </span>
+        <button type="button" (click)="salirModoSoporte()">Salir del modo soporte</button>
+      </div>
+    }
+    <router-outlet />
+  </main>
+
+  <ui-paleta-comandos />
+</div>

@@ -1,0 +1,150 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Novedades</h1>
+    <p>Cambios de liquidación y novedades</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <label class="campo-periodo">
+      Período
+      <input
+        type="month"
+        [value]="periodoFiltro()"
+        (change)="establecerPeriodoFiltro($any($event.target).value)"
+      />
+    </label>
+    <div class="grupo-acciones">
+      <button
+        type="button"
+        class="btn-secundario"
+        *tienePermiso="'novedad.ver'"
+        [disabled]="guardando() || !periodoFiltro()"
+        (click)="exportarCsv()"
+      >
+        Exportar CSV
+      </button>
+      <button
+        type="button"
+        class="btn-secundario"
+        *tienePermiso="'novedad.gestionar'"
+        [disabled]="guardando() || !periodoFiltro()"
+        (click)="confirmarLote()"
+      >
+        {{ loteConfirmado() ? 'Lote confirmado' : 'Confirmar lote' }}
+      </button>
+      <button type="button" class="btn-primario" *tienePermiso="'novedad.gestionar'" (click)="alternarFormulario()">
+        {{ mostrarFormulario() ? 'Cancelar' : 'Nueva novedad' }}
+      </button>
+    </div>
+  </div>
+
+  @if (loteConfirmado()) {
+    <div class="banner-exito">
+      Lote del período {{ periodoFiltro() }} confirmado ({{ novedadesFiltradas().length }} novedades).
+    </div>
+  }
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>{{ novedadEditando() ? 'Editar novedad' : 'Nueva novedad' }}</h2>
+      <form [formGroup]="formularioNovedad" (ngSubmit)="guardarNovedad()">
+        <div class="grilla-formulario">
+          @if (!novedadEditando()) {
+            <label>
+              Empleado *
+              <select formControlName="empleadoId">
+                <option value="">Seleccionar...</option>
+                @for (e of empleados(); track e.id) {
+                  <option [value]="e.id">{{ e.nombre }} {{ e.apellido }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Período *
+              <input type="month" formControlName="periodo" />
+            </label>
+          }
+          <label>
+            Tipo *
+            <select formControlName="tipo">
+              @for (tipo of tiposNovedad; track tipo) {
+                <option [value]="tipo">{{ etiquetaTipo(tipo) }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Fecha *
+            <input type="date" formControlName="fecha" />
+          </label>
+          <label>
+            Cantidad
+            <input type="number" formControlName="cantidad" step="0.01" />
+          </label>
+          <label>
+            Monto
+            <input type="number" formControlName="monto" step="0.01" />
+          </label>
+          <label class="ancho-completo">
+            Descripción
+            <textarea formControlName="descripcion" rows="2"></textarea>
+          </label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Guardar novedad' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando novedades...</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Período</th>
+            <th>Tipo</th>
+            <th>Fecha</th>
+            <th>Cantidad</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (n of novedadesFiltradas(); track n.id) {
+            <tr>
+              <td>{{ n.nombreEmpleado }}</td>
+              <td>{{ n.periodo }}</td>
+              <td>{{ etiquetaTipo(n.tipo) }}</td>
+              <td>{{ n.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>{{ n.cantidad ?? '—' }}</td>
+              <td>{{ n.monto ?? '—' }}</td>
+              <td><span class="etiqueta" [class.activo]="n.estado === 'CONFIRMADA'">{{ n.estado }}</span></td>
+              <td class="celda-acciones">
+                @if (n.estado === 'BORRADOR') {
+                  <button type="button" class="btn-accion" *tienePermiso="'novedad.gestionar'" (click)="editarNovedad(n)">
+                    Editar
+                  </button>
+                  <button type="button" class="btn-accion btn-peligro" *tienePermiso="'novedad.gestionar'" (click)="eliminarNovedad(n)">
+                    Eliminar
+                  </button>
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="sin-datos">No hay novedades para el período seleccionado</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

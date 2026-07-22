@@ -1,0 +1,62 @@
+<div class="pagina">
+  <header class="encabezado-pagina encabezado-atencion">
+    <div>
+      <h1>{{ saludo() }}@if (nombre()) {, {{ nombre() }}}</h1>
+      <p>Centro de atención — lo que necesita respuesta hoy</p>
+    </div>
+    <button type="button" class="atajo-paleta" (click)="abrirPaleta()">
+      Buscar o ir a… <kbd>Ctrl K</kbd>
+    </button>
+  </header>
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="indicadores" />
+  } @else {
+    <section class="seccion-atencion">
+      <h2 class="seccion-titulo">Necesita tu atención</h2>
+      @if (atencion().length === 0) {
+        <ui-estado-vacio
+          titulo="Todo al día"
+          descripcion="No hay pendientes urgentes. Usá Ctrl+K para ir a cualquier módulo."
+          icono="✓"
+        />
+      } @else {
+        <ul class="lista-atencion">
+          @for (item of atencion(); track item.id) {
+            <li>
+              <a class="item-atencion" [routerLink]="item.ruta">
+                <div>
+                  <strong>{{ item.titulo }}</strong>
+                  <span>{{ item.detalle }}</span>
+                </div>
+                <span class="item-atencion__flecha" aria-hidden="true">→</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (tarjetasVisibles().length > 0) {
+      <section class="seccion-indicadores">
+        <h2 class="seccion-titulo">Resumen</h2>
+        <div class="grilla-tarjetas-indicador">
+          @for (tarjeta of tarjetasVisibles(); track tarjeta.titulo) {
+            @if (tarjeta.ruta) {
+              <a
+                class="tarjeta-indicador-compartida"
+                [class.alerta]="tarjeta.alerta"
+                [routerLink]="tarjeta.ruta"
+              >
+                <div>
+                  <span class="tarjeta-indicador-valor">{{ tarjeta.valor }}</span>
+                  <span class="tarjeta-indicador-titulo">{{ tarjeta.titulo }}</span>
+                </div>
+              </a>
+            }
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

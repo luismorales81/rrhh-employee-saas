@@ -1,0 +1,13 @@
+.pagina-detalle-empresa {
+  .acciones-rapidas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-bottom: var(--espacio-6);
+  }
+
+  .etiqueta {
+    display: inline-block;
+    margin-top: var(--espacio-2);
+  }
+}

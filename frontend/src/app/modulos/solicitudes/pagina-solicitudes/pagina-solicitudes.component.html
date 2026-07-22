@@ -1,0 +1,159 @@
+<div class="pagina">
+  <ui-migas [items]="migas" />
+  <header class="encabezado-pagina">
+    <h1>Solicitudes</h1>
+    <p>Pedidos del equipo pendientes de respuesta</p>
+  </header>
+
+  <div class="pestanas">
+    <button
+      type="button"
+      [class.activa]="pestanaActiva() === 'pendientes'"
+      (click)="cambiarPestana('pendientes')"
+    >
+      Pendientes de aprobación
+      @if (pendientes().length > 0) {
+        <span class="contador">{{ pendientes().length }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      [class.activa]="pestanaActiva() === 'todas'"
+      (click)="cambiarPestana('todas')"
+    >
+      Todas las solicitudes
+    </button>
+  </div>
+
+  <div class="barra-herramientas barra-filtros">
+    <div class="grupo-filtros">
+      <input
+        type="search"
+        class="campo-busqueda"
+        placeholder="Buscar por empleado, tipo o motivo..."
+        [ngModel]="filtroTexto()"
+        (ngModelChange)="filtroTexto.set($event)"
+      />
+      <select [ngModel]="filtroTipoId()" (ngModelChange)="filtroTipoId.set($event)">
+        <option value="">Todos los tipos</option>
+        @for (tipo of tipos(); track tipo.id) {
+          <option [value]="tipo.id">{{ tipo.nombre }}</option>
+        }
+      </select>
+      <select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)">
+        <option value="">Todos los estados</option>
+        @for (estado of estadosDisponibles(); track estado) {
+          <option [value]="estado">{{ etiquetaEstado(estado) }}</option>
+        }
+      </select>
+    </div>
+    @if (puedeVerConfiguracionFlujos()) {
+      <a routerLink="/configuracion-workflow" class="btn-secundario">
+        Configurar flujos
+      </a>
+    }
+  </div>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando solicitudes...</div>
+  } @else if (solicitudesFiltradas().length === 0) {
+    <ui-estado-vacio
+      [titulo]="pestanaActiva() === 'pendientes' ? 'Sin pendientes' : 'Sin solicitudes'"
+      [descripcion]="
+        pestanaActiva() === 'pendientes'
+          ? 'No hay pedidos esperando tu aprobación.'
+          : 'Todavía no hay solicitudes registradas.'
+      "
+      icono="✓"
+    />
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Tipo</th>
+            <th>Detalle</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of solicitudesFiltradas(); track s.id) {
+            <tr>
+              <td>{{ nombreEmpleado(s) }}</td>
+              <td>{{ s.tipoSolicitudNombre }}</td>
+              <td>{{ detalleSolicitud(s) }}</td>
+              <td>
+                <ui-insignia [variante]="variante(s.estado)">{{ etiquetaEstado(s.estado) }}</ui-insignia>
+              </td>
+              <td>{{ s.createdAt | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <button type="button" class="btn-accion" (click)="abrirDetalle(s)">Revisar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="ayuda-formulario">
+      Las solicitudes de vacaciones se gestionan en
+      <a routerLink="/vacaciones" class="enlace">Vacaciones</a>.
+    </p>
+  }
+
+  <ui-cajon
+    [abierto]="cajonAbierto()"
+    [titulo]="seleccionada()?.tipoSolicitudNombre ?? 'Solicitud'"
+    [subtitulo]="seleccionada() ? nombreEmpleado(seleccionada()!) : ''"
+    (cerrar)="cerrarCajon()"
+  >
+    @if (seleccionada(); as s) {
+      <dl class="grilla-perfil">
+        <div>
+          <dt>Estado</dt>
+          <dd>
+            <ui-insignia [variante]="variante(s.estado)">{{ etiquetaEstado(s.estado) }}</ui-insignia>
+          </dd>
+        </div>
+        <div>
+          <dt>Detalle</dt>
+          <dd>{{ detalleSolicitud(s) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ s.createdAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+      </dl>
+
+      @if (esVacaciones(s) && tieneDetalleVacaciones(s)) {
+        <p class="ayuda-formulario">
+          <a [routerLink]="['/vacaciones']" [queryParams]="{ solicitud: s.solicitudVacacionesId }">
+            Abrir en Vacaciones
+          </a>
+        </p>
+      }
+    }
+    <ng-container pie>
+      @if (seleccionada(); as s) {
+        @if (puedeDarDeBajaSolicitud(s)) {
+          <ui-boton variante="peligro" (pulsado)="cancelar(s.id)">Dar de baja</ui-boton>
+        }
+        @if (puedeAprobar(s.estado) && !esVacaciones(s)) {
+          <ng-container *tienePermiso="'solicitud.rechazar'">
+            <ui-boton variante="peligro" (pulsado)="rechazar(s.id)">Rechazar</ui-boton>
+          </ng-container>
+          <ng-container *tienePermiso="'solicitud.aprobar'">
+            <ui-boton (pulsado)="aprobar(s.id)">Aprobar</ui-boton>
+          </ng-container>
+        }
+      }
+    </ng-container>
+  </ui-cajon>
+</div>

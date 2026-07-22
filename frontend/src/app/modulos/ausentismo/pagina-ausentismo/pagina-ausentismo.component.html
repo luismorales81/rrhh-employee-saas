@@ -1,0 +1,126 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Ausencias</h1>
+    <p>Quién no está y por qué</p>
+  </header>
+
+  <div class="barra-herramientas barra-filtros con-accion-principal">
+    <input
+      type="search"
+      class="campo-busqueda"
+      placeholder="Buscar por empleado, tipo o motivo..."
+      [ngModel]="filtroListado()"
+      (ngModelChange)="filtroListado.set($event)"
+    />
+    <button type="button" class="btn-primario" (click)="alternarFormulario()">
+      {{ mostrarFormulario() ? 'Cancelar' : 'Registrar ausencia' }}
+    </button>
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>Nueva ausencia</h2>
+      <form [formGroup]="formularioRegistrar" (ngSubmit)="registrarAusencia()">
+        <div class="grilla-formulario">
+          <label class="ancho-completo">
+            Empleado *
+            <app-buscador-empleado
+              formControlName="empleadoId"
+              [empleados]="empleados()"
+            />
+          </label>
+          <label>
+            Tipo *
+            <select formControlName="tipoAusenciaId">
+              <option value="">Seleccionar...</option>
+              @for (t of tipos(); track t.id) {
+                <option [value]="t.id">{{ t.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label>Fecha *<input type="date" formControlName="fecha" /></label>
+          <label>Motivo<input formControlName="motivo" /></label>
+          <label class="checkbox">
+            <input type="checkbox" formControlName="justificada" />
+            Justificada
+          </label>
+          <label>Certificado</label>
+          <app-selector-archivo aceptar=".pdf,image/*" (urlArchivo)="establecerUrlCertificado($event)" />
+          <input type="hidden" formControlName="urlCertificado" />
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Registrar' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando ausencias...</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Tipo</th>
+            <th>Fecha</th>
+            <th>Motivo</th>
+            <th>Justificada</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of ausenciasFiltradas(); track a.id) {
+            <tr>
+              <td>{{ a.empleadoNombre }}</td>
+              <td>{{ a.tipoAusenciaNombre }}</td>
+              <td>{{ a.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>{{ a.motivo ?? '—' }}</td>
+              <td>{{ a.justificada ? 'Sí' : 'No' }}</td>
+              <td>
+                @if (!a.justificada) {
+                  <button type="button" class="btn-accion" (click)="abrirJustificar(a)">Justificar</button>
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="sin-datos">No hay ausencias registradas</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (mostrarModalJustificar()) {
+    <div class="modal-fondo" (click)="cerrarJustificar()">
+      <section class="modal-contenido tarjeta-formulario" (click)="$event.stopPropagation()">
+        <h2>Justificar ausencia — {{ ausenciaJustificando()?.empleadoNombre }}</h2>
+        <form [formGroup]="formularioJustificar" (ngSubmit)="guardarJustificacion()">
+          <div class="grilla-formulario">
+            <label>Motivo<input formControlName="motivo" /></label>
+            <label class="checkbox">
+              <input type="checkbox" formControlName="justificada" />
+              Marcar como justificada
+            </label>
+            <label>Certificado</label>
+            <app-selector-archivo aceptar=".pdf,image/*" (urlArchivo)="establecerUrlCertificadoJustificar($event)" />
+            <input type="hidden" formControlName="urlCertificado" />
+          </div>
+          <div class="acciones-modal">
+            <button type="button" class="btn-secundario" (click)="cerrarJustificar()">Cancelar</button>
+            <button type="submit" class="btn-primario" [disabled]="guardando()">
+              {{ guardando() ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</div>

@@ -1,0 +1,111 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Activos</h1>
+    <p>Equipos y herramientas asignadas</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-primario" *tienePermiso="'activo.gestionar'" (click)="alternarFormularioCrear()">
+      {{ mostrarFormularioCrear() ? 'Cancelar' : 'Nuevo activo' }}
+    </button>
+  </div>
+
+  @if (mostrarFormularioCrear()) {
+    <section class="tarjeta-formulario">
+      <h2>Registrar activo</h2>
+      <form [formGroup]="formularioCrear" (ngSubmit)="crearActivo()">
+        <div class="grilla-formulario">
+          <label>Nombre *<input formControlName="nombre" /></label>
+          <label>Tipo *<input formControlName="tipo" placeholder="Notebook, Celular..." /></label>
+          <label>Nº serie<input formControlName="numeroSerie" /></label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Crear activo' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (mostrarFormularioAsignar() && activoSeleccionado()) {
+    <section class="tarjeta-formulario">
+      <h2>Asignar: {{ activoSeleccionado()!.nombre }}</h2>
+      <form [formGroup]="formularioAsignar" (ngSubmit)="asignarActivo()">
+        <div class="grilla-formulario">
+          <label>
+            Empleado *
+            <select formControlName="empleadoId">
+              <option value="">Seleccionar...</option>
+              @for (e of empleados(); track e.id) {
+                <option [value]="e.id">{{ e.nombre }} {{ e.apellido }}</option>
+              }
+            </select>
+          </label>
+          <label>Fecha entrega *<input type="date" formControlName="fechaEntrega" /></label>
+          <label>Notas<input formControlName="notas" /></label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">Asignar</button>
+        <button type="button" class="btn-secundario" (click)="cerrarFormulariosAccion()">Cancelar</button>
+      </form>
+    </section>
+  }
+
+  @if (mostrarFormularioDevolver() && activoSeleccionado()) {
+    <section class="tarjeta-formulario">
+      <h2>Devolver: {{ activoSeleccionado()!.nombre }}</h2>
+      <form [formGroup]="formularioDevolver" (ngSubmit)="devolverActivo()">
+        <div class="grilla-formulario">
+          <label>Fecha devolución<input type="date" formControlName="fechaDevolucion" /></label>
+          <label>Notas<input formControlName="notas" /></label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">Registrar devolución</button>
+        <button type="button" class="btn-secundario" (click)="cerrarFormulariosAccion()">Cancelar</button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando activos...</div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Nº serie</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (activo of activos(); track activo.id) {
+            <tr>
+              <td>{{ activo.nombre }}</td>
+              <td>{{ activo.tipo }}</td>
+              <td>{{ activo.numeroSerie ?? '—' }}</td>
+              <td><span class="etiqueta" [class.activo]="activo.estado === 'DISPONIBLE'">{{ activo.estado }}</span></td>
+              <td class="celda-acciones">
+                @if (activo.estado === 'DISPONIBLE') {
+                  <button type="button" class="btn-accion aprobar" *tienePermiso="'activo.gestionar'" (click)="abrirAsignar(activo)">Asignar</button>
+                }
+                @if (activo.estado === 'ASIGNADO') {
+                  <button type="button" class="btn-accion aprobar" *tienePermiso="'activo.gestionar'" (click)="abrirDevolver(activo)">Devolver</button>
+                }
+                @if (activo.estado === 'DISPONIBLE') {
+                  <button type="button" class="btn-accion rechazar" *tienePermiso="'activo.gestionar'" (click)="eliminarActivo(activo)">Eliminar</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="sin-datos">No hay activos registrados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -1,0 +1,305 @@
+<div class="pagina">
+  <ui-migas [items]="migas" />
+  <header class="encabezado-pagina">
+    <h1>Recibos</h1>
+    <p>Firmados y disponibles cuando los necesiten</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    @if (modoVista() === 'listado') {
+      <span></span>
+      <div class="grupo-acciones">
+        <ui-boton variante="secundario" (pulsado)="mostrarCargaMasiva()">Carga masiva</ui-boton>
+        <ui-boton (pulsado)="mostrarCargaIndividual()">Cargar recibo</ui-boton>
+      </div>
+    } @else {
+      <span></span>
+      <ui-boton variante="secundario" (pulsado)="volverAlListado()">Volver al listado</ui-boton>
+    }
+  </div>
+
+  <ui-cajon
+    [abierto]="cajonCargaAbierto()"
+    titulo="Cargar recibo"
+    subtitulo="El PDF se publica con integridad verificable"
+    ancho="lg"
+    (cerrar)="cerrarCajonCarga()"
+  >
+    <form [formGroup]="formularioCargar" id="form-recibo">
+      <div class="grilla-formulario">
+        <label>
+          Empleado *
+          <select formControlName="empleadoId">
+            <option [value]="0">Seleccionar...</option>
+            @for (e of empleados(); track e.id) {
+              <option [value]="e.id">{{ e.nombre }} {{ e.apellido }}</option>
+            }
+          </select>
+        </label>
+        <label>Período *<input formControlName="periodo" placeholder="2026-06" /></label>
+        <label>Título *<input formControlName="titulo" /></label>
+        <label>Monto neto<input type="number" formControlName="montoNeto" step="0.01" /></label>
+        <label>Monto bruto<input type="number" formControlName="montoBruto" step="0.01" /></label>
+        <label class="ancho-completo">Archivo PDF *</label>
+        <app-selector-archivo aceptar=".pdf" (archivoCargado)="establecerArchivo($event)" />
+      </div>
+    </form>
+    <div pie>
+      <ui-boton variante="secundario" (pulsado)="cerrarCajonCarga()">Cancelar</ui-boton>
+      <ui-boton (pulsado)="cargarRecibo()" [cargando]="guardando()" [deshabilitado]="guardando()">
+        Publicar recibo
+      </ui-boton>
+    </div>
+  </ui-cajon>
+
+  @if (modoVista() === 'masiva') {
+    <section class="tarjeta-formulario">
+      <h2>Carga masiva de recibos</h2>
+      <p class="ayuda-legal">
+        Subí un ZIP con PDFs nombrados por CUIL (11 dígitos), número de empleado o DNI.
+      </p>
+
+      @if (pasoMasivo() === 1) {
+        <form [formGroup]="formularioMasivo" (ngSubmit)="analizarCargaMasiva()">
+          <div class="grilla-formulario">
+            <label>Período *<input formControlName="periodo" placeholder="2026-06" /></label>
+            <label>Título base *<input formControlName="tituloBase" /></label>
+            <label>Monto neto (opcional)<input type="number" formControlName="montoNeto" step="0.01" /></label>
+            <label>Monto bruto (opcional)<input type="number" formControlName="montoBruto" step="0.01" /></label>
+            <label>Archivo ZIP *
+              <input type="file" accept=".zip" (change)="seleccionarZip($event)" />
+            </label>
+          </div>
+          <button type="submit" class="btn-primario" [disabled]="guardando() || !archivoZipSeleccionado()">
+            {{ guardando() ? 'Analizando...' : 'Analizar emparejamiento' }}
+          </button>
+        </form>
+      }
+
+      @if (pasoMasivo() === 2 && analisisMasivo()) {
+        <h3>Paso 2 — Vista previa</h3>
+        <p>{{ analisisMasivo()!.emparejados }} listos · {{ analisisMasivo()!.conError }} con observaciones</p>
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Empleado</th>
+              <th>Estado</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of analisisMasivo()!.filas; track fila.nombreArchivo) {
+              <tr>
+                <td>{{ fila.nombreArchivo }}</td>
+                <td>{{ fila.nombreEmpleado ?? '—' }}</td>
+                <td>{{ etiquetaEstadoAnalisis(fila) }}</td>
+                <td>{{ fila.mensaje ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <button type="button" class="btn-primario" [disabled]="guardando()" (click)="confirmarCargaMasiva()">
+          {{ guardando() ? 'Publicando...' : 'Confirmar y publicar' }}
+        </button>
+      }
+
+      @if (pasoMasivo() === 3 && resultadoMasivo()) {
+        <h3>Resultado de la carga</h3>
+        <p>Cargados: {{ resultadoMasivo()!.cargados.length }} · Omitidos: {{ resultadoMasivo()!.omitidos.length }} · Errores: {{ resultadoMasivo()!.errores.length }}</p>
+        @if (resultadoMasivo()!.cargados.length > 0) {
+          <ul>
+            @for (c of resultadoMasivo()!.cargados; track c.reciboId) {
+              <li>{{ c.nombreArchivo }} → {{ c.nombreEmpleado }}</li>
+            }
+          </ul>
+        }
+      }
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (modoVista() === 'listado') {
+    <app-widget-alertas-recibos />
+
+    <section class="seccion-listado-recibos">
+      <div class="barra-herramientas barra-filtros barra-filtros-recibos">
+        <div class="grupo-filtros">
+          <label>
+            Período
+            <input
+              type="text"
+              placeholder="2026-06"
+              [value]="filtroPeriodo()"
+              (input)="filtroPeriodo.set($any($event.target).value)"
+            />
+          </label>
+          <label>
+            Estado
+            <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)">
+              <option value="">Todos</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="VISTO">Visto</option>
+              <option value="FIRMADO">Firmado</option>
+              <option value="DISCONFORMIDAD">Disconformidad</option>
+            </select>
+          </label>
+          <label class="checkbox-filtro">
+            <input
+              type="checkbox"
+              [checked]="filtroSoloAntiguos()"
+              (change)="filtroSoloAntiguos.set($any($event.target).checked)"
+            />
+            Solo pendientes antiguos
+          </label>
+        </div>
+      </div>
+
+      @if (cargando()) {
+        <div class="estado-carga">Cargando recibos...</div>
+      } @else {
+        <div class="tabla-contenedor tabla-recibos">
+          <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Período</th>
+              <th>Título</th>
+              <th>Estado</th>
+              <th>Publicación</th>
+              <th>Firma</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of recibosFiltrados(); track r.id) {
+              <tr [class.fila-legacy]="r.requiereRepublicacion" [class.fila-disconformidad]="r.estado === 'DISCONFORMIDAD'">
+                <td>{{ r.nombreEmpleado }}</td>
+                <td>{{ r.periodo }}</td>
+                <td>
+                  <div class="celda-titulo-recibo">
+                    <span>{{ r.titulo }}</span>
+                    @if (r.requiereRepublicacion || r.version > 1) {
+                      <div class="etiquetas-recibo">
+                        @if (r.requiereRepublicacion) {
+                          <span class="etiqueta-alerta">Requiere republicación</span>
+                        }
+                        @if (r.version > 1) {
+                          <span class="etiqueta-version">v{{ r.version }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <ui-insignia [variante]="varianteEstadoRecibo(r.estado)">{{ etiquetaEstado(r.estado) }}</ui-insignia>
+                </td>
+                <td>{{ r.fechaPublicacion | date:'dd/MM/yyyy' }}</td>
+                <td>{{ r.fechaFirma ? (r.fechaFirma | date:'dd/MM/yyyy') : '—' }}</td>
+                <td class="celda-acciones">
+                  <button type="button" class="btn-accion" (click)="verEventos(r)">Eventos</button>
+                  @if (!r.requiereRepublicacion && r.hashPdf) {
+                    <button type="button" class="btn-accion" (click)="exportarExpediente(r)">Expediente</button>
+                  }
+                  @if (puedeRepublicar(r)) {
+                    <button type="button" class="btn-accion" (click)="abrirRepublicar(r)">Republicar</button>
+                  }
+                  @if (r.estado === 'PENDIENTE' || r.estado === 'VISTO') {
+                    <button type="button" class="btn-accion" (click)="reenviarNotificacion(r)">Reenviar aviso</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="sin-datos">No hay recibos con los filtros seleccionados</td></tr>
+            }
+          </tbody>
+        </table>
+        </div>
+      }
+    </section>
+  }
+
+  @if (reciboEventos()) {
+    <div class="modal-fondo" (click)="cerrarEventos()">
+      <section
+        class="modal-contenido tarjeta-formulario modal-amplio"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-eventos-encabezado">
+          <h2>Eventos de firma — {{ reciboEventos()!.titulo }}</h2>
+          <button type="button" class="btn-secundario" (click)="cerrarEventos()">Cerrar</button>
+        </header>
+        @if (cargandoEventos()) {
+          <div class="estado-carga">Cargando eventos...</div>
+        } @else if (eventosFirma().length === 0) {
+          <p class="estado-vacio-inline">Sin eventos registrados aún.</p>
+        } @else {
+          <div class="tabla-contenedor">
+            <table class="tabla-datos">
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>IP</th>
+                  <th>Sistema</th>
+                  <th>Comentario</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (ev of eventosFirma(); track ev.id) {
+                  <tr>
+                    <td>{{ ev.tipo }}</td>
+                    <td>{{ ev.timestampEvento | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>{{ ev.direccionIp ?? '—' }}</td>
+                    <td>{{ ev.sistemaOperativo ?? '—' }}</td>
+                    <td>{{ ev.comentario ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    </div>
+  }
+
+  @if (reciboRepublicar(); as recibo) {
+    <div class="modal-fondo" (click)="cerrarRepublicar()">
+      <section
+        class="modal-contenido tarjeta-formulario"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="modal-eventos-encabezado">
+          <h2>Republicar recibo — {{ recibo.periodo }}</h2>
+          <button type="button" class="btn-secundario" (click)="cerrarRepublicar()">Cerrar</button>
+        </header>
+        <p class="texto-ayuda-modal">
+          Se creará la versión {{ recibo.version + 1 }}. La versión actual quedará en el historial.
+        </p>
+        <div class="grilla-formulario">
+          <label class="ancho-completo">
+            Motivo de republicación *
+            <textarea
+              rows="3"
+              [value]="motivoRepublicacion()"
+              (input)="motivoRepublicacion.set($any($event.target).value)"
+            ></textarea>
+          </label>
+          <label class="ancho-completo">
+            PDF corregido *
+            <app-selector-archivo aceptar=".pdf" (archivoCargado)="establecerArchivoRepublicar($event)" />
+          </label>
+        </div>
+        <div class="acciones-modal">
+          <button type="button" class="btn-secundario" (click)="cerrarRepublicar()">Cancelar</button>
+          <button type="button" class="btn-primario" [disabled]="guardando()" (click)="confirmarRepublicar()">
+            {{ guardando() ? 'Republicando...' : 'Confirmar republicación' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

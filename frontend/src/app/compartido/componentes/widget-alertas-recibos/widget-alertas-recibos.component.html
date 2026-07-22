@@ -1,0 +1,120 @@
+<section class="widget-alertas-recibos">
+  <header class="encabezado-widget">
+    <div>
+      <h2>Alertas de recibos</h2>
+      <p>Seguimiento de firmas pendientes y disconformidades</p>
+    </div>
+    <a class="enlace-ver-todos" routerLink="/recibos">Ir a Recibos</a>
+  </header>
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="indicadores" />
+  } @else if (!alertas()) {
+    <div class="estado-vacio">
+      <h3 class="estado-vacio-titulo">Sin datos de alertas</h3>
+      <p class="estado-vacio-descripcion">No se pudieron cargar las alertas de recibos. Reintentá más tarde.</p>
+    </div>
+  } @else {
+    @let datos = alertas()!;
+
+    <div class="grilla-indicadores">
+      <div class="indicador">
+        <span class="indicador-valor">{{ datos.totalPendientesFirma }}</span>
+        <span class="indicador-etiqueta">Pendientes de firma</span>
+      </div>
+      <a
+        class="indicador indicador-alerta"
+        routerLink="/recibos"
+        [queryParams]="{ antiguos: '1' }"
+      >
+        <span class="indicador-valor">{{ datos.totalAntiguosSinFirmar }}</span>
+        <span class="indicador-etiqueta">Sin firmar (+{{ datos.diasUmbralAntiguedad }} días)</span>
+      </a>
+      <div class="indicador indicador-disconformidad">
+        <span class="indicador-valor">{{ datos.totalDisconformidades }}</span>
+        <span class="indicador-etiqueta">Disconformidades</span>
+      </div>
+    </div>
+
+    @if (pendientesPorPeriodo().length > 0) {
+      <div class="bloque-periodos">
+        <h3>Pendientes por período</h3>
+        <div class="lista-periodos">
+          @for (item of pendientesPorPeriodo(); track item.periodo) {
+            <a
+              class="chip-periodo"
+              routerLink="/recibos"
+              [queryParams]="{ periodo: item.periodo }"
+            >
+              <span class="chip-periodo-valor">{{ item.periodo }}</span>
+              <span class="chip-periodo-cantidad" [attr.aria-label]="item.cantidad + ' pendientes'">{{ item.cantidad }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    }
+
+    @if (datos.pendientesAntiguos.length > 0) {
+      <div class="bloque-tabla">
+        <div class="bloque-encabezado">
+          <h3>Pendientes antiguos</h3>
+          <a routerLink="/recibos" [queryParams]="{ antiguos: '1' }">Ver filtrados</a>
+        </div>
+        <table class="tabla-compacta">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Período</th>
+              <th>Estado</th>
+              <th>Días</th>
+              <th>Publicado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of datos.pendientesAntiguos; track r.id) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/empleados', r.empleadoId, 'legajo']">{{ r.nombreEmpleado }}</a>
+                </td>
+                <td>{{ r.periodo }}</td>
+                <td><span class="etiqueta-estado">{{ etiquetaEstado(r.estado) }}</span></td>
+                <td class="celda-alerta">{{ diasDesde(r.fechaPublicacion) }}</td>
+                <td>{{ r.fechaPublicacion | date: 'dd/MM/yyyy' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (datos.totalPendientesFirma === 0) {
+      <p class="mensaje-ok">No hay recibos pendientes de firma.</p>
+    }
+
+    @if (datos.disconformidadesRecientes.length > 0) {
+      <div class="bloque-tabla bloque-disconformidad">
+        <h3>Disconformidades recientes</h3>
+        <table class="tabla-compacta">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Período</th>
+              <th>Motivo</th>
+              <th>Firma</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of datos.disconformidadesRecientes; track r.id) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/empleados', r.empleadoId, 'legajo']">{{ r.nombreEmpleado }}</a>
+                </td>
+                <td>{{ r.periodo }}</td>
+                <td class="celda-comentario">{{ r.comentarioDisconformidad ?? '—' }}</td>
+                <td>{{ r.fechaPublicacion | date: 'dd/MM/yyyy' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

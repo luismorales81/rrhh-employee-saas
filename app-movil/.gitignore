@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Build
+www/
+dist/
+.angular/
+
+# Capacitor
+android/
+ios/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-error.log*

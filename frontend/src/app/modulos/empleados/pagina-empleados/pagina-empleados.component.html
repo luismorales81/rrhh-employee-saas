@@ -1,0 +1,146 @@
+<div class="pagina">
+  <ui-migas [items]="[{ etiqueta: 'Personas', ruta: '/empleados' }, { etiqueta: 'Equipo' }]" />
+  <header class="encabezado-pagina">
+    <h1>Equipo</h1>
+    <p>Las personas de tu empresa</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <input
+      type="search"
+      class="campo-busqueda"
+      placeholder="Buscar por nombre, DNI o legajo..."
+      (input)="actualizarFiltro($event)"
+    />
+    <ng-container *tienePermiso="'empleado.crear'">
+      <ui-boton (pulsado)="alternarFormulario()">Nuevo empleado</ui-boton>
+    </ng-container>
+  </div>
+
+  @if (error()) {
+    <ui-estado-error titulo="No se pudo completar la acción" [mensaje]="error()!" />
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando empleados...</div>
+  } @else if (empleadosFiltrados().length === 0) {
+    <ui-estado-vacio
+      titulo="No hay personas"
+      descripcion="Cuando des de alta al equipo, aparecerán aquí."
+      icono="👥"
+    >
+      <ng-container *tienePermiso="'empleado.crear'">
+        <ui-boton (pulsado)="alternarFormulario()">Nuevo empleado</ui-boton>
+      </ng-container>
+    </ui-estado-vacio>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>Ingreso</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (empleado of empleadosFiltrados(); track empleado.id) {
+            <tr>
+              <td>{{ empleado.numeroEmpleado ?? '—' }}</td>
+              <td>{{ empleado.nombre }} {{ empleado.apellido }}</td>
+              <td>{{ empleado.dni ?? '—' }}</td>
+              <td>{{ empleado.fechaIngreso ?? '—' }}</td>
+              <td>
+                <ui-insignia [variante]="varianteEstadoEmpleado(empleado.estado)">
+                  {{ etiquetaEstadoEmpleado(empleado.estado) }}
+                </ui-insignia>
+              </td>
+              <td class="celda-acciones">
+                <a [routerLink]="['/empleados', empleado.id, 'legajo']" class="btn-accion">Ver legajo</a>
+                <ng-container *tienePermiso="'empleado.actualizar'">
+                  <button type="button" class="btn-accion" (click)="editarEmpleado(empleado)">Editar</button>
+                  @if (empleado.estado === 'ACTIVO') {
+                    <button type="button" class="btn-accion btn-peligro" (click)="desactivarEmpleado(empleado)">Desactivar</button>
+                  }
+                </ng-container>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <ui-cajon
+    [abierto]="mostrarFormulario()"
+    [titulo]="tituloFormulario()"
+    subtitulo="Los datos del legajo se pueden completar después"
+    ancho="lg"
+    (cerrar)="cancelarFormulario()"
+  >
+    <form [formGroup]="formularioEmpleado" (ngSubmit)="guardarEmpleado()" id="form-empleado">
+      <div class="grilla-formulario">
+        <label>Nombre *<input formControlName="nombre" /></label>
+        <label>Apellido *<input formControlName="apellido" /></label>
+        <label>DNI<input formControlName="dni" /></label>
+        <label>Nº empleado<input formControlName="numeroEmpleado" /></label>
+        <label>Fecha ingreso<input type="date" formControlName="fechaIngreso" /></label>
+        <label>Correo laboral<input type="email" formControlName="emailLaboral" /></label>
+        <label>
+          Gerencia
+          <select formControlName="gerenciaId">
+            <option value="">Sin asignar</option>
+            @for (g of gerencias(); track g.id) {
+              <option [value]="g.id">{{ g.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Área
+          <select formControlName="areaId">
+            <option value="">Sin asignar</option>
+            @for (a of areasFiltradas(); track a.id) {
+              <option [value]="a.id">{{ a.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Sector
+          <select formControlName="sectorId">
+            <option value="">Sin asignar</option>
+            @for (s of sectoresFiltrados(); track s.id) {
+              <option [value]="s.id">{{ s.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Puesto
+          <select formControlName="puestoId">
+            <option value="">Sin asignar</option>
+            @for (p of puestos(); track p.id) {
+              <option [value]="p.id">{{ p.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Supervisor
+          <select formControlName="supervisorId">
+            <option value="">Sin asignar</option>
+            @for (e of supervisoresDisponibles(); track e.id) {
+              <option [value]="e.id">{{ e.nombre }} {{ e.apellido }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </form>
+    <div pie>
+      <ui-boton variante="secundario" (pulsado)="cancelarFormulario()">Cancelar</ui-boton>
+      <ui-boton (pulsado)="guardarEmpleado()" [cargando]="guardando()" [deshabilitado]="guardando()">
+        Guardar empleado
+      </ui-boton>
+    </div>
+  </ui-cajon>
+</div>

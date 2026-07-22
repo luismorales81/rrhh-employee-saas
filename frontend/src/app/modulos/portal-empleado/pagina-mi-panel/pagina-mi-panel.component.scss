@@ -1,0 +1,64 @@
+.aviso-onboarding {
+  background: var(--color-primario-suave);
+  border: 1px solid var(--color-primario-borde);
+  border-radius: var(--radio-lg);
+  padding: var(--espacio-4) var(--espacio-5);
+  margin-bottom: var(--espacio-5);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-texto);
+
+  a {
+    color: var(--color-primario);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.tarjeta-onboarding {
+  background: var(--color-superficie);
+  border-radius: var(--radio-lg);
+  padding: var(--espacio-5) var(--espacio-6);
+  margin-bottom: var(--espacio-6);
+  border: 1px solid var(--color-borde-suave);
+  box-shadow: var(--sombra-sm);
+
+  h2 {
+    margin: 0 0 var(--espacio-4);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.lista-tareas-onboarding {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--espacio-4);
+    padding: var(--espacio-3) var(--espacio-4);
+    background: var(--color-fondo);
+    border-radius: var(--radio-md);
+    font-size: 0.875rem;
+  }
+}
+
+.etiqueta-completada {
+  font-size: 0.75rem;
+  color: var(--color-exito-texto);
+  font-weight: 600;
+  background: var(--color-exito-fondo);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radio-completo);
+}

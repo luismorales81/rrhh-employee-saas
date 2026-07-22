@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Ligo">
+  <rect width="32" height="32" rx="8" fill="#0F172A"/>
+  <g transform="translate(16 16) rotate(-45) scale(0.42)">
+    <rect x="-28" y="-18" width="36" height="20" rx="10" stroke="#3DCFB0" stroke-width="10" fill="none"/>
+    <rect x="-8" y="-2" width="36" height="20" rx="10" stroke="#F28B82" stroke-width="10" fill="none"/>
+  </g>
+</svg>

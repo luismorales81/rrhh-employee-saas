@@ -1,0 +1,10 @@
+.visor-documento-imagen {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 520px);
+  object-fit: contain;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  margin: var(--espacio-4) 0;
+  background: #fff;
+}

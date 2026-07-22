@@ -1,0 +1,189 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Asistencia</h1>
+    <p>Ingresos, egresos y zonas</p>
+    <nav class="subnav">
+      <a routerLink="/fichajes" class="activo">Marcas</a>
+      <a routerLink="/fichajes/zonas">Zonas</a>
+      <a routerLink="/fichajes/configuracion">Configuración</a>
+    </nav>
+  </header>
+
+  <div class="pestanas">
+    <button type="button" [class.activa]="pestana() === 'todas'" (click)="cambiarPestana('todas')">Todas</button>
+    <button type="button" [class.activa]="pestana() === 'pendientes'" (click)="cambiarPestana('pendientes')">
+      Pendientes de revisión
+      @if (conteoPendientesRevision() > 0) {
+        <span class="contador">{{ conteoPendientesRevision() }}</span>
+      }
+    </button>
+    <button type="button" [class.activa]="pestana() === 'resumen'" (click)="cambiarPestana('resumen')">Resumen</button>
+  </div>
+
+  @if (pestana() !== 'pendientes') {
+    <form class="barra-herramientas barra-filtros" [formGroup]="filtros" (ngSubmit)="cargar()">
+      <div class="grupo-filtros">
+        <label>
+          Desde
+          <input type="date" formControlName="desde" />
+        </label>
+        <label>
+          Hasta
+          <input type="date" formControlName="hasta" />
+        </label>
+        @if (pestana() === 'todas') {
+          <label>
+            Empleado
+            <select formControlName="empleadoId">
+              <option value="">Todos</option>
+              @for (e of empleados(); track e.id) {
+                <option [value]="e.id">{{ e.nombre }} {{ e.apellido }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            Estado
+            <select formControlName="estado">
+              <option value="">Todos</option>
+              <option value="VALIDADA">Validada</option>
+              <option value="PENDIENTE_REVISION">Pendiente</option>
+              <option value="RECHAZADA">Rechazada</option>
+            </select>
+          </label>
+        }
+      </div>
+      <div class="grupo-acciones-fila">
+        <button type="submit" class="btn-secundario">Filtrar</button>
+        @if (pestana() === 'todas') {
+          <button type="button" class="btn-secundario" (click)="exportarCsv()">Exportar CSV</button>
+        }
+      </div>
+    </form>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando…</div>
+  } @else if (pestana() === 'resumen') {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Empleado</th>
+            <th>Entradas</th>
+            <th>Salidas</th>
+            <th>Pendientes</th>
+            <th>Horas est.</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of resumen(); track r.empleadoId + r.fecha) {
+            <tr>
+              <td>{{ r.fecha }}</td>
+              <td>{{ r.empleadoNombre }}</td>
+              <td>{{ r.cantidadEntradas }}</td>
+              <td>{{ r.cantidadSalidas }}</td>
+              <td>{{ r.cantidadPendientes }}</td>
+              <td>{{ r.horasEstimadas }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Fecha/hora</th>
+            <th>Empleado</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Zona</th>
+            <th>Ubicación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of marcas(); track m.id) {
+            <tr>
+              <td>{{ m.fechaHoraServidor | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ m.empleadoNombre }}</td>
+              <td>{{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }}</td>
+              <td>{{ etiquetaEstado(m.estado) }}</td>
+              <td>{{ m.zonaFichajeNombre ?? '—' }}</td>
+              <td>
+                <span
+                  class="etiqueta-ubicacion"
+                  [class.etiqueta-ubicacion-ok]="m.estado === 'VALIDADA' && m.zonaFichajeNombre"
+                  [class.etiqueta-ubicacion-alerta]="m.motivoEstado === 'FUERA_DE_ZONA' || m.motivoEstado === 'SIN_ZONA_HABILITADA'"
+                >
+                  {{ etiquetaUbicacion(m) }}
+                </span>
+              </td>
+              <td class="celda-acciones">
+                <div class="grupo-acciones-fila">
+                  <button type="button" class="btn-enlace-tabla" (click)="verDetalle(m)">Ver detalle</button>
+                  @if (m.estado === 'PENDIENTE_REVISION') {
+                    <button type="button" class="btn-accion" *tienePermiso="'fichaje.revisar'" (click)="aprobar(m.id)">
+                      Aprobar
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (marcaDetalle(); as m) {
+    <div class="modal-overlay" (click)="cerrarDetalle()">
+      <div class="modal-contenido modal-contenido-ancha" (click)="$event.stopPropagation()">
+        <h3>{{ m.empleadoNombre }} — {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }}</h3>
+        <dl class="lista-definicion">
+          <dt>Estado</dt><dd>{{ etiquetaEstado(m.estado) }}</dd>
+          <dt>Fecha servidor</dt><dd>{{ m.fechaHoraServidor | date:'dd/MM/yyyy HH:mm:ss' }}</dd>
+          <dt>Ubicación GPS</dt>
+          <dd>
+            @if (m.latitud != null && m.longitud != null) {
+              {{ m.latitud }}, {{ m.longitud }} (±{{ m.precisionMetros ?? '?' }} m)
+              @if (enlaceGoogleMaps(m); as enlace) {
+                · <a [href]="enlace" target="_blank" rel="noopener noreferrer">Abrir en Google Maps</a>
+              }
+            } @else { — }
+          </dd>
+          <dt>Dispositivo</dt><dd>{{ m.modeloDispositivo ?? '—' }} / {{ m.sistemaOperativo ?? '—' }}</dd>
+          <dt>Zona registrada</dt><dd>{{ m.zonaFichajeNombre ?? '—' }}</dd>
+          @if (m.motivoEstado) {
+            <dt>Motivo</dt><dd>{{ etiquetaMotivo(m.motivoEstado) }}</dd>
+          }
+        </dl>
+
+        <h4 class="subtitulo-mapa">Mapa de ubicación vs zonas</h4>
+        <app-mapa-marca-fichaje
+          [marca]="m"
+          [empleado]="empleadoDetalle()"
+          [restringirSoloZonasAsignadas]="restringirZonasDetalle()"
+        />
+
+        @if (m.estado === 'PENDIENTE_REVISION') {
+          <label class="ancho-completo">
+            Motivo de rechazo
+            <textarea rows="3" [value]="notaRechazo()" (input)="notaRechazo.set($any($event.target).value)"></textarea>
+          </label>
+          <div class="barra-herramientas con-accion-principal">
+            <button type="button" class="btn-peligro" [disabled]="guardando()" (click)="rechazar(m.id)">Rechazar</button>
+            <button type="button" class="btn-primario" [disabled]="guardando()" (click)="aprobar(m.id)">Aprobar</button>
+          </div>
+        }
+        <button type="button" class="btn-secundario modal-cerrar" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+    </div>
+  }
+</div>

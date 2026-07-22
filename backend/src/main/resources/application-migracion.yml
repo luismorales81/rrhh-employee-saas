@@ -1,0 +1,15 @@
+# Perfil migración disco -> S3/R2. Uso: --spring.profiles.active=migracion --migrar-almacenamiento=true
+app:
+  demo:
+    cargar-datos: false
+  almacenamiento:
+    proveedor: s3
+    ruta-base: ./data/archivos
+    tamano-maximo-mb: 10
+    s3:
+      endpoint: ${S3_ENDPOINT:http://localhost:9000}
+      region: ${S3_REGION:us-east-1}
+      bucket: ${S3_BUCKET:rrhh-archivos}
+      access-key: ${S3_ACCESS_KEY:rrhh_minio}
+      secret-key: ${S3_SECRET_KEY:rrhh_minio_secret}
+      path-style: true

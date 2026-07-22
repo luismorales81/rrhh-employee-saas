@@ -1,0 +1,7 @@
+@if (cargando() || cargandoExterno) {
+  <div class="esqueleto-bloque esqueleto-pdf" role="status" [attr.aria-label]="etiquetaCarga"></div>
+} @else if (esImagen() && urlImagenSegura()) {
+  <img class="visor-documento-imagen" [src]="urlImagenSegura()!" [alt]="titulo" />
+} @else if (urlPdfSegura()) {
+  <iframe class="visor-pdf" [src]="urlPdfSegura()!" [title]="titulo"></iframe>
+}

@@ -1,0 +1,42 @@
+<div class="layout layout-plataforma">
+  <aside class="barra-lateral">
+    <div class="marca">
+      <img class="marca-logo" src="assets/marca/ligo-logo.svg" alt="Ligo" width="132" height="34" />
+      <span class="marca-texto">Empresas</span>
+    </div>
+
+    <button type="button" class="atajo-buscar" (click)="abrirPaleta()">
+      <span>Buscar…</span>
+      <kbd>Ctrl K</kbd>
+    </button>
+
+    <nav class="menu">
+      @for (item of itemsMenu(); track item.ruta) {
+        <a
+          class="menu-item"
+          [routerLink]="item.ruta"
+          routerLinkActive="activo"
+        >
+          <app-icono-menu class="menu-icono" [nombre]="item.icono" />
+          <span>{{ item.etiqueta }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="pie-barra">
+      <div class="usuario">
+        <span class="usuario-rol">Plataforma</span>
+        <span class="usuario-email">{{ servicioAutenticacion.sesionActual()?.email }}</span>
+      </div>
+      <button type="button" class="btn-cerrar" (click)="cerrarSesion()">
+        Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <main class="contenido">
+    <router-outlet />
+  </main>
+
+  <ui-paleta-comandos />
+</div>

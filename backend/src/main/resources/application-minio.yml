@@ -1,0 +1,13 @@
+# Perfil MinIO local (docker compose). Uso: --spring.profiles.active=minio
+app:
+  almacenamiento:
+    proveedor: s3
+    tamano-maximo-mb: 10
+    ruta-base: ./data/archivos
+    s3:
+      endpoint: http://localhost:9000
+      region: us-east-1
+      bucket: rrhh-archivos
+      access-key: rrhh_minio
+      secret-key: rrhh_minio_secret
+      path-style: true

@@ -1,0 +1,48 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Alertas</h1>
+    <p>Lo que no te podés perder</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="notificaciones" />
+  } @else {
+    <div class="lista-grupos-notificaciones">
+      @for (grupo of grupos(); track grupo.titulo) {
+        <section class="grupo-notificaciones">
+          <h2>{{ grupo.titulo }}</h2>
+          @for (n of grupo.items; track n.id) {
+            <article class="tarjeta-notificacion" [class.leida]="n.leida">
+              <header>
+                <h3>{{ n.titulo }}</h3>
+                <time>{{ n.createdAt | date:'dd/MM/yyyy HH:mm' }}</time>
+              </header>
+              <p>{{ n.mensaje }}</p>
+              <footer>
+                <span class="etiqueta-tipo">{{ n.tipo }}</span>
+                @if (!n.leida) {
+                  <button type="button" class="btn-primario" (click)="marcarLeida(n)">
+                    Marcar leída
+                  </button>
+                } @else {
+                  <span class="etiqueta activo">Leída</span>
+                }
+              </footer>
+            </article>
+          }
+        </section>
+      } @empty {
+        <div class="estado-vacio">
+          <h2 class="estado-vacio-titulo">Sin notificaciones</h2>
+          <p class="estado-vacio-descripcion">
+            Cuando haya avisos importantes de tu empresa, los vas a encontrar acá.
+          </p>
+        </div>
+      }
+    </div>
+  }
+</div>

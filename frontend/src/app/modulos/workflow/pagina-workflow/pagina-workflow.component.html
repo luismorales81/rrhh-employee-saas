@@ -1,0 +1,229 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Flujos</h1>
+    <p>Cómo se aprueban las solicitudes</p>
+  </header>
+
+  <div class="pestanas">
+    <button type="button" [class.activa]="pestanaActiva() === 'flujos'" (click)="cambiarPestana('flujos')">Flujos</button>
+    <button type="button" [class.activa]="pestanaActiva() === 'tipos'" (click)="cambiarPestana('tipos')">Tipos de solicitud</button>
+  </div>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    @if ((pestanaActiva() === 'flujos' && puedeConfigurarFlujos()) || (pestanaActiva() === 'tipos' && puedeGestionarTipos())) {
+      <button type="button" class="btn-primario" (click)="alternarFormulario()">
+        {{ mostrarFormulario() ? 'Cancelar' : (pestanaActiva() === 'flujos' ? 'Nuevo flujo' : 'Nuevo tipo') }}
+      </button>
+    }
+  </div>
+
+  @if (mostrarFormulario() && pestanaActiva() === 'flujos') {
+    <section class="tarjeta-formulario">
+      <h2>{{ tituloFormularioFlujo() }}</h2>
+      <form [formGroup]="formularioFlujo" (ngSubmit)="crearFlujo()">
+        <div class="grilla-formulario">
+          <label>Nombre *<input formControlName="nombre" /></label>
+          <label>Descripción<input formControlName="descripcion" /></label>
+        </div>
+
+        <h3>Pasos de aprobación</h3>
+        <div formArrayName="pasos" class="lista-pasos">
+          <div
+            *ngFor="let paso of pasosFormulario.controls; let i = index"
+            [formGroupName]="i"
+            class="paso-workflow"
+          >
+            <h4 class="titulo-paso">Paso {{ i + 1 }}</h4>
+            <div class="grilla-formulario">
+              <label>Nombre *<input formControlName="nombre" /></label>
+              <label>
+                Tipo de paso *
+                <select formControlName="tipoPaso">
+                  @for (tipo of tiposPaso; track tipo) {
+                    <option [value]="tipo">{{ etiquetaTipoPaso(tipo) }}</option>
+                  }
+                </select>
+              </label>
+              @if (requiereRol(i)) {
+                <label>
+                  Rol *
+                  <select formControlName="rolId">
+                    <option value="">Seleccionar rol</option>
+                    @for (rol of roles(); track rol.id) {
+                      <option [value]="rol.id">{{ rol.nombre }}</option>
+                    }
+                  </select>
+                </label>
+              }
+              @if (requiereUsuario(i)) {
+                <label>
+                  Usuario *
+                  <select formControlName="usuarioId">
+                    <option value="">Seleccionar usuario</option>
+                    @for (usuario of usuarios(); track usuario.id) {
+                      <option [value]="usuario.id">{{ usuario.email }}</option>
+                    }
+                  </select>
+                </label>
+              }
+            </div>
+            @if (pasosFormulario.length > 1) {
+              <button type="button" class="btn-accion btn-peligro" (click)="quitarPaso(i)">Quitar paso</button>
+            }
+          </div>
+        </div>
+        <button type="button" class="btn-secundario" (click)="agregarPaso()">Agregar paso</button>
+
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : (flujoEditandoId() ? 'Actualizar flujo' : 'Crear flujo') }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (mostrarFormulario() && pestanaActiva() === 'tipos') {
+    <section class="tarjeta-formulario">
+      <h2>{{ tituloFormularioTipo() }}</h2>
+      <form [formGroup]="formularioTipo" (ngSubmit)="crearTipo()">
+        <div class="grilla-formulario">
+          <label>Nombre *<input formControlName="nombre" /></label>
+          <label>Descripción<input formControlName="descripcion" /></label>
+          <label>
+            Flujo de trabajo
+            <select formControlName="flujoTrabajoId">
+              <option value="">Sin flujo asociado</option>
+              @for (f of flujos(); track f.id) {
+                <option [value]="f.id">{{ f.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" formControlName="requiereAprobacion" />
+            Requiere aprobación
+          </label>
+          <label class="checkbox">
+            <input type="checkbox" formControlName="requiereAdjunto" />
+            Requiere adjunto
+          </label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : (tipoEditandoId() ? 'Actualizar tipo' : 'Crear tipo') }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando configuración...</div>
+  } @else if (pestanaActiva() === 'flujos') {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Pasos</th>
+            <th>Activo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of flujos(); track f.id) {
+            <tr>
+              <td>{{ f.nombre }}</td>
+              <td>{{ f.descripcion ?? '—' }}</td>
+              <td>
+                @if (cantidadPasos(f) === 0) {
+                  <span class="texto-muted">Sin pasos</span>
+                } @else {
+                  <ul class="lista-pasos-inline">
+                    @for (paso of pasosDelFlujo(f); track paso.id) {
+                      <li>{{ descripcionPaso(paso) }}</li>
+                    }
+                  </ul>
+                }
+              </td>
+              <td>{{ f.activo ? 'Sí' : 'No' }}</td>
+              <td class="celda-acciones">
+                <div class="grupo-acciones-fila">
+                  @if (puedeConfigurarFlujos()) {
+                    <button type="button" class="btn-accion" (click)="editarFlujo(f)">Editar</button>
+                  }
+                  <button type="button" class="btn-enlace-tabla" (click)="alternarDetalleFlujo(f.id)">
+                    {{ flujoExpandidoId() === f.id ? 'Ocultar detalle' : 'Ver detalle' }}
+                  </button>
+                  @if (puedeConfigurarFlujos()) {
+                    <button type="button" class="btn-enlace-tabla" (click)="desactivarFlujo(f.id)">
+                      {{ f.activo ? 'Desactivar' : 'Activar' }}
+                    </button>
+                    <button type="button" class="btn-accion btn-peligro" (click)="eliminarFlujo(f.id)">Eliminar</button>
+                  }
+                </div>
+              </td>
+            </tr>
+            @if (flujoExpandidoId() === f.id) {
+              <tr class="fila-detalle-flujo">
+                <td colspan="5">
+                  @if (cantidadPasos(f) === 0) {
+                    <p class="sin-datos">Este flujo no tiene pasos configurados.</p>
+                  } @else {
+                    <ul class="detalle-pasos">
+                      @for (paso of pasosDelFlujo(f); track paso.id) {
+                        <li>
+                          {{ descripcionPaso(paso) }}
+                        </li>
+                      }
+                    </ul>
+                  }
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr><td colspan="5" class="sin-datos">No hay flujos de trabajo configurados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Flujo</th>
+            <th>Aprobación</th>
+            <th>Adjunto</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of tipos(); track t.id) {
+            <tr>
+              <td>{{ t.nombre }}</td>
+              <td>{{ t.descripcion ?? '—' }}</td>
+              <td>{{ nombreFlujo(t.flujoTrabajoId) }}</td>
+              <td>{{ t.requiereAprobacion ? 'Sí' : 'No' }}</td>
+              <td>{{ t.requiereAdjunto ? 'Sí' : 'No' }}</td>
+              <td class="celda-acciones">
+                @if (puedeGestionarTipos()) {
+                  <button type="button" class="btn-accion" (click)="editarTipo(t)">Editar</button>
+                  <button type="button" class="btn-accion btn-peligro" (click)="eliminarTipo(t.id)">Eliminar</button>
+                } @else {
+                  —
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="sin-datos">No hay tipos de solicitud configurados</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

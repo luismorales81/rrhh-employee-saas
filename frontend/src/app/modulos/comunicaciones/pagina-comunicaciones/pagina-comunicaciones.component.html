@@ -1,0 +1,248 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Avisos</h1>
+    <p>Mensajes para tu equipo</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-primario" (click)="alternarFormulario()">
+      {{ mostrarFormulario() ? 'Cancelar' : 'Nueva comunicación' }}
+    </button>
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>Publicar comunicación</h2>
+      <form [formGroup]="formularioPublicar" (ngSubmit)="publicar()">
+        <div class="grilla-formulario">
+          <label class="ancho-completo">Título *<input formControlName="titulo" /></label>
+          <label class="ancho-completo">Mensaje *<textarea formControlName="mensaje" rows="4"></textarea></label>
+          <label>
+            Alcance *
+            <select formControlName="tipoDestinatario">
+              @for (tipo of tiposDestinatario; track tipo.valor) {
+                <option [value]="tipo.valor">{{ tipo.etiqueta }}</option>
+              }
+            </select>
+          </label>
+          @if (requiereReferencia()) {
+            <label class="ancho-completo">
+              {{ etiquetaReferencia() }} *
+              @if (esEmpleado()) {
+                <app-buscador-empleado
+                  formControlName="referenciaDestinatarioId"
+                  [empleados]="empleados()"
+                  placeholder="Buscar empleado por nombre, legajo o DNI..."
+                />
+              } @else if (esArea()) {
+                <app-buscador-opcion
+                  formControlName="referenciaDestinatarioId"
+                  [opciones]="opcionesAreas()"
+                  placeholder="Buscar área..."
+                  textoAyuda="Escribí el nombre del área"
+                />
+              } @else if (esSector()) {
+                <app-buscador-opcion
+                  formControlName="referenciaDestinatarioId"
+                  [opciones]="opcionesSectores()"
+                  placeholder="Buscar sector..."
+                  textoAyuda="Escribí el nombre del sector"
+                />
+              } @else if (esPuesto()) {
+                <app-buscador-opcion
+                  formControlName="referenciaDestinatarioId"
+                  [opciones]="opcionesPuestos()"
+                  placeholder="Buscar puesto..."
+                  textoAyuda="Escribí el nombre del puesto"
+                />
+              }
+            </label>
+          }
+          <label class="checkbox">
+            <input type="checkbox" formControlName="requiereConfirmacion" />
+            Requiere confirmación de lectura
+          </label>
+          <label>
+            Modo
+            <select formControlName="modoPublicacion">
+              <option value="ahora">Publicar ahora</option>
+              <option value="programar">Programar</option>
+            </select>
+          </label>
+          @if (esProgramada()) {
+            <label>Fecha y hora programada *<input type="datetime-local" formControlName="fechaProgramada" /></label>
+          }
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : (esProgramada() ? 'Programar' : 'Publicar') }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando comunicaciones...</div>
+  } @else {
+    @if (programadas().length > 0) {
+      <section class="tarjeta-formulario">
+        <h2>Programadas</h2>
+        <div class="tabla-contenedor">
+          <table class="tabla-datos">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Publicación programada</th>
+                <th>Destinatario</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of programadas(); track c.id) {
+                <tr>
+                  <td>{{ c.titulo }}</td>
+                  <td>{{ c.fechaPublicacionProgramada | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td>{{ etiquetaTipoDestinatario(c.tipoDestinatario) }}</td>
+                  <td>
+                    <button type="button" class="btn-accion btn-peligro" (click)="cancelarProgramada(c.id)">
+                      Cancelar
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <div class="lista-comunicaciones">
+      @for (c of comunicaciones(); track c.id) {
+        <article class="tarjeta-comunicacion">
+          <header>
+            <h2>{{ c.titulo }}</h2>
+            <time>{{ (c.fechaPublicacion ?? c.fechaPublicacionProgramada) | date:'dd/MM/yyyy HH:mm' }}</time>
+            @if (c.estado === 'PROGRAMADA') {
+              <span class="etiqueta">Programada</span>
+            }
+          </header>
+          <p class="mensaje">{{ c.mensaje }}</p>
+          <footer class="pie-comunicacion">
+            <span class="etiqueta">{{ etiquetaTipoDestinatario(c.tipoDestinatario) }}</span>
+            <button
+              type="button"
+              class="estadisticas estadisticas-enlace"
+              (click)="verLecturas(c)"
+              [attr.aria-label]="'Ver quiénes leyeron: ' + c.titulo"
+            >
+              {{ c.totalLeidos }}/{{ c.totalDestinatarios }} leídas
+              @if (c.requiereConfirmacion) {
+                · {{ c.totalConfirmados }} confirmadas
+              }
+              <span class="ver-detalle">Ver quiénes</span>
+            </button>
+          </footer>
+        </article>
+      } @empty {
+        <div class="sin-datos">No hay comunicaciones publicadas</div>
+      }
+    </div>
+  }
+
+  <ui-cajon
+    [abierto]="cajonLecturasAbierto()"
+    [titulo]="comunicacionSeleccionada()?.titulo ?? 'Lecturas'"
+    [subtitulo]="
+      comunicacionSeleccionada()
+        ? comunicacionSeleccionada()!.totalLeidos +
+          ' de ' +
+          comunicacionSeleccionada()!.totalDestinatarios +
+          ' personas leyeron este aviso'
+        : ''
+    "
+    ancho="lg"
+    (cerrar)="cerrarLecturas()"
+  >
+    @if (cargandoDestinatarios()) {
+      <div class="estado-carga">Cargando destinatarios…</div>
+    } @else if (errorDestinatarios()) {
+      <div class="estado-error">{{ errorDestinatarios() }}</div>
+    } @else {
+      <div class="resumen-lecturas">
+        <ui-insignia variante="exito">{{ totalLeidasDetalle() }} leídas</ui-insignia>
+        <ui-insignia variante="alerta">{{ totalPendientesDetalle() }} pendientes</ui-insignia>
+      </div>
+
+      <div class="pestanas pestanas-lecturas">
+        <button type="button" [class.activa]="filtroLecturas() === 'todos'" (click)="filtroLecturas.set('todos')">
+          Todas ({{ destinatarios().length }})
+        </button>
+        <button type="button" [class.activa]="filtroLecturas() === 'leidas'" (click)="filtroLecturas.set('leidas')">
+          Leídas ({{ totalLeidasDetalle() }})
+        </button>
+        <button
+          type="button"
+          [class.activa]="filtroLecturas() === 'pendientes'"
+          (click)="filtroLecturas.set('pendientes')"
+        >
+          Pendientes ({{ totalPendientesDetalle() }})
+        </button>
+      </div>
+
+      @if (destinatariosFiltrados().length === 0) {
+        <ui-estado-vacio
+          titulo="Sin resultados"
+          [descripcion]="
+            filtroLecturas() === 'pendientes'
+              ? 'Todas las personas ya leyeron este aviso.'
+              : filtroLecturas() === 'leidas'
+                ? 'Todavía nadie leyó este aviso.'
+                : 'Este aviso no tiene destinatarios.'
+          "
+        />
+      } @else {
+        <ul class="lista-destinatarios">
+          @for (d of destinatariosFiltrados(); track d.id) {
+            <li class="item-destinatario">
+              <div class="item-destinatario__persona">
+                <strong>{{ d.nombreEmpleado || 'Persona' }}</strong>
+                <span>
+                  @if (d.leida && d.fechaLectura) {
+                    Leída el {{ d.fechaLectura | date:'dd/MM/yyyy HH:mm' }}
+                  } @else {
+                    Todavía no leyó
+                  }
+                  @if (d.confirmada && d.fechaConfirmacion) {
+                    · Confirmada el {{ d.fechaConfirmacion | date:'dd/MM/yyyy HH:mm' }}
+                  }
+                </span>
+              </div>
+              <div class="item-destinatario__estado">
+                @if (d.leida) {
+                  <ui-insignia variante="exito">Leída</ui-insignia>
+                } @else {
+                  <ui-insignia variante="alerta">Pendiente</ui-insignia>
+                }
+                @if (comunicacionSeleccionada()?.requiereConfirmacion) {
+                  @if (d.confirmada) {
+                    <ui-insignia variante="primario">Confirmada</ui-insignia>
+                  } @else {
+                    <ui-insignia variante="neutro">Sin confirmar</ui-insignia>
+                  }
+                }
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    <div pie>
+      <ui-boton variante="secundario" (pulsado)="cerrarLecturas()">Cerrar</ui-boton>
+    </div>
+  </ui-cajon>
+</div>

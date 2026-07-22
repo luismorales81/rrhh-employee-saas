@@ -1,0 +1,128 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Listas</h1>
+    <p>Primeros pasos y despedidas, organizados</p>
+  </header>
+
+  <nav class="pestanas">
+    <button type="button" [class.activa]="pestanaActiva() === 'onboarding'" (click)="cambiarPestana('onboarding')">
+      Primeros pasos
+    </button>
+    <button type="button" [class.activa]="pestanaActiva() === 'offboarding'" (click)="cambiarPestana('offboarding')">
+      Despedidas
+    </button>
+  </nav>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    @if (pestanaActiva() === 'onboarding') {
+      <button type="button" class="btn-primario" *tienePermiso="'onboarding.gestionar'" (click)="alternarFormulario()">
+        {{ mostrarFormulario() ? 'Cancelar' : 'Nueva plantilla' }}
+      </button>
+    } @else {
+      <button type="button" class="btn-primario" *tienePermiso="'offboarding.gestionar'" (click)="alternarFormulario()">
+        {{ mostrarFormulario() ? 'Cancelar' : 'Nueva plantilla' }}
+      </button>
+    }
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>{{ (pestanaActiva() === 'onboarding' ? editandoOnboardingId() : editandoOffboardingId()) ? 'Editar' : 'Nueva' }} plantilla</h2>
+      <form [formGroup]="formulario" (ngSubmit)="guardar()">
+        <div class="grilla-formulario">
+          <label>Nombre *<input formControlName="nombre" /></label>
+          <label>Orden *<input type="number" formControlName="orden" min="1" /></label>
+          <label>
+            Tipo *
+            <select formControlName="tipo">
+              @if (pestanaActiva() === 'onboarding') {
+                @for (t of tiposOnboarding; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              } @else {
+                @for (t of tiposOffboarding; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              }
+            </select>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="obligatoria" /> Obligatoria
+          </label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando plantillas...</div>
+  } @else if (pestanaActiva() === 'onboarding') {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Obligatoria</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of plantillasOnboarding(); track p.id) {
+            <tr>
+              <td>{{ p.orden }}</td>
+              <td>{{ p.nombre }}</td>
+              <td><span class="etiqueta">{{ p.tipo }}</span></td>
+              <td>{{ p.obligatoria ? 'Sí' : 'No' }}</td>
+              <td class="celda-acciones">
+                <button type="button" class="btn-accion" *tienePermiso="'onboarding.gestionar'" (click)="editarOnboarding(p)">Editar</button>
+                <button type="button" class="btn-accion btn-peligro" *tienePermiso="'onboarding.gestionar'" (click)="eliminarOnboarding(p.id)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5">No hay plantillas de primeros pasos</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Obligatoria</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of plantillasOffboarding(); track p.id) {
+            <tr>
+              <td>{{ p.orden }}</td>
+              <td>{{ p.nombre }}</td>
+              <td><span class="etiqueta">{{ p.tipo }}</span></td>
+              <td>{{ p.obligatoria ? 'Sí' : 'No' }}</td>
+              <td class="celda-acciones">
+                <button type="button" class="btn-accion" *tienePermiso="'offboarding.gestionar'" (click)="editarOffboarding(p)">Editar</button>
+                <button type="button" class="btn-accion btn-peligro" *tienePermiso="'offboarding.gestionar'" (click)="eliminarOffboarding(p.id)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5">No hay plantillas de despedida</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

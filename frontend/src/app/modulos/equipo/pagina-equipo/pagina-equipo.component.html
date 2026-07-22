@@ -1,0 +1,51 @@
+<div class="pagina">
+  <ui-migas [items]="migas" />
+  <header class="encabezado-pagina">
+    <h1>{{ saludo() }}, {{ nombre() }}</h1>
+    <p>Lo que necesita tu equipo hoy</p>
+  </header>
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="indicadores" />
+  } @else {
+    <section class="grilla-tarjetas-indicador">
+      <a class="tarjeta-indicador-compartida" [class.alerta]="pendientes().length > 0" routerLink="/equipo/aprobaciones">
+        <span class="tarjeta-indicador-valor">{{ pendientes().length }}</span>
+        <span class="tarjeta-indicador-titulo">Aprobaciones pendientes</span>
+      </a>
+      <a class="tarjeta-indicador-compartida" [class.alerta]="vacacionesPendientes() > 0" routerLink="/vacaciones">
+        <span class="tarjeta-indicador-valor">{{ vacacionesPendientes() }}</span>
+        <span class="tarjeta-indicador-titulo">Vacaciones en revisión</span>
+      </a>
+      <div class="tarjeta-indicador-compartida">
+        <span class="tarjeta-indicador-valor">{{ ausenciasHoy() }}</span>
+        <span class="tarjeta-indicador-titulo">Ausentes hoy</span>
+      </div>
+    </section>
+
+    <section class="seccion-atencion">
+      <h2 class="seccion-titulo">Necesita tu atención</h2>
+      @if (pendientes().length === 0) {
+        <ui-estado-vacio
+          titulo="Todo al día"
+          descripcion="No hay pedidos pendientes de tu aprobación."
+          icono="✓"
+        />
+      } @else {
+        <ul class="lista-atencion">
+          @for (s of pendientes(); track s.id) {
+            <li>
+              <a routerLink="/equipo/aprobaciones" class="item-atencion">
+                <div>
+                  <strong>{{ s.empleadoNombre ?? 'Persona' }}</strong>
+                  <span>{{ s.tipoSolicitudNombre }} · {{ s.createdAt | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <ui-insignia variante="alerta">{{ etiquetaEstado(s.estado) }}</ui-insignia>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>

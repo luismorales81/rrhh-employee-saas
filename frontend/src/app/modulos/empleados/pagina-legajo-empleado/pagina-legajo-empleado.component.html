@@ -1,0 +1,244 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <a routerLink="/empleados" class="enlace-volver">← Volver al equipo</a>
+    @if (legajo(); as l) {
+      <h1>{{ l.nombre }} {{ l.apellido }}</h1>
+      <p>Datos y trayectoria de la persona</p>
+    } @else {
+      <h1>Legajo</h1>
+      <p>Datos y trayectoria de la persona</p>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-carga">Cargando legajo...</div>
+  } @else if (legajo()) {
+    <section class="tarjeta-formulario">
+      <h2>Datos del legajo</h2>
+      <dl class="grilla-perfil">
+        <div>
+          <dt>Nº empleado</dt>
+          <dd>{{ legajo()!.numeroEmpleado ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>DNI</dt>
+          <dd>{{ legajo()!.dni ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de ingreso</dt>
+          <dd>{{ legajo()!.fechaIngreso ?? '—' }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>
+            <span class="etiqueta" [class.activo]="legajo()!.estado === 'ACTIVO'">{{ legajo()!.estado }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Primeros pasos</dt>
+          <dd>{{ legajo()!.estadoOnboarding ?? 'Sin iniciar' }}</dd>
+        </div>
+        <div>
+          <dt>Bienvenida completada</dt>
+          <dd>{{ legajo()!.fechaCompletadoOnboarding ?? '—' }}</dd>
+        </div>
+        @if (legajo()!.estadoOffboarding) {
+          <div>
+            <dt>Despedida</dt>
+            <dd>{{ legajo()!.estadoOffboarding }}</dd>
+          </div>
+          <div>
+            <dt>Despedida completada</dt>
+            <dd>{{ legajo()!.fechaCompletadoOffboarding ?? '—' }}</dd>
+          </div>
+        }
+      </dl>
+
+      <div class="legajo-indicadores">
+        <div class="legajo-indicador" [class.alerta]="legajo()!.documentosPendientes > 0">
+          <span class="legajo-indicador-valor">{{ legajo()!.documentosPendientes }}</span>
+          <span class="legajo-indicador-etiqueta">Documentos pendientes</span>
+        </div>
+        <div class="legajo-indicador" [class.alerta]="legajo()!.solicitudesAbiertas > 0">
+          <span class="legajo-indicador-valor">{{ legajo()!.solicitudesAbiertas }}</span>
+          <span class="legajo-indicador-etiqueta">Solicitudes abiertas</span>
+        </div>
+      </div>
+
+      @if (puedeIniciarOnboarding() || puedeCompletarOnboarding()) {
+        <div class="barra-herramientas con-accion-principal">
+          <span></span>
+          @if (puedeIniciarOnboarding()) {
+            <button
+              type="button"
+              class="btn-primario"
+              [disabled]="procesando()"
+              *tienePermiso="'empleado.actualizar'"
+              (click)="iniciarOnboarding()"
+            >
+              {{ procesando() ? 'Procesando...' : 'Iniciar primeros pasos' }}
+            </button>
+          }
+          @if (puedeCompletarOnboarding()) {
+            <button
+              type="button"
+              class="btn-primario"
+              [disabled]="procesando()"
+              *tienePermiso="'empleado.actualizar'"
+              (click)="completarOnboarding()"
+            >
+              {{ procesando() ? 'Procesando...' : 'Completar bienvenida' }}
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    @if (legajo()!.estadoOnboarding === 'EN_PROGRESO' && tareasOnboarding().length > 0) {
+      <section class="tarjeta-formulario seccion-legajo">
+        <h3>Pasos de bienvenida</h3>
+        <div class="checklist-progreso">
+          <strong>{{ tareasCompletadasOnboarding() }} de {{ tareasOnboarding().length }} completadas</strong>
+          <div class="barra-progreso">
+            <div
+              class="barra-progreso-relleno"
+              [style.--progreso]="porcentajeOnboarding() + '%'"
+            ></div>
+          </div>
+        </div>
+        <ul class="lista-checklist">
+          @for (tarea of tareasOnboarding(); track tarea.id) {
+            <li class="item-checklist" [class.completada]="tarea.completada">
+              <div class="item-checklist-info">
+                <strong>{{ tarea.nombre }}</strong>
+                <span class="item-checklist-meta">
+                  {{ tarea.obligatoria ? 'Obligatoria' : 'Opcional' }} · {{ tarea.tipo }}
+                  @if (tarea.completada && tarea.fechaCompletado) {
+                    · Completada {{ tarea.fechaCompletado | date:'dd/MM/yyyy HH:mm' }}
+                  }
+                </span>
+              </div>
+              @if (!tarea.completada) {
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  [disabled]="procesando()"
+                  (click)="marcarTareaOnboardingCompletada(tarea)"
+                >
+                  Marcar completada
+                </button>
+              } @else {
+                <span class="etiqueta activo">Completada</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (mostrarOffboarding(legajo()!) && tareasOffboarding().length > 0) {
+      <section class="tarjeta-formulario seccion-legajo">
+        <h3>Pasos de despedida</h3>
+        <div class="checklist-progreso">
+          <strong>{{ tareasCompletadasOffboarding() }} de {{ tareasOffboarding().length }} completadas</strong>
+          <div class="barra-progreso">
+            <div
+              class="barra-progreso-relleno"
+              [style.--progreso]="porcentajeOffboarding() + '%'"
+            ></div>
+          </div>
+        </div>
+        <ul class="lista-checklist">
+          @for (tarea of tareasOffboarding(); track tarea.id) {
+            <li class="item-checklist" [class.completada]="tarea.completada">
+              <div class="item-checklist-info">
+                <strong>{{ tarea.nombre }}</strong>
+                <span class="item-checklist-meta">
+                  {{ tarea.obligatoria ? 'Obligatoria' : 'Opcional' }} · {{ tarea.tipo }}
+                  @if (tarea.completada && tarea.fechaCompletado) {
+                    · Completada {{ tarea.fechaCompletado | date:'dd/MM/yyyy HH:mm' }}
+                  }
+                </span>
+              </div>
+              @if (!tarea.completada) {
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  [disabled]="procesando()"
+                  *tienePermiso="'offboarding.gestionar'"
+                  (click)="marcarTareaOffboardingCompletada(tarea)"
+                >
+                  Marcar completada
+                </button>
+              } @else {
+                <span class="etiqueta activo">Completada</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <section class="tarjeta-formulario seccion-legajo">
+      <h3>Recibos de sueldo</h3>
+      @if (cargandoRecibos()) {
+        <p class="item-checklist-meta">Cargando recibos...</p>
+      } @else if (recibosEmpleado().length === 0) {
+        <p class="item-checklist-meta">Sin recibos publicados en el legajo.</p>
+      } @else {
+        <div class="lista-registros-portal">
+          @for (recibo of recibosEmpleado(); track recibo.id) {
+            <article class="tarjeta-registro-portal">
+              <div class="tarjeta-registro-portal-encabezado">
+                <strong>{{ recibo.periodo }}</strong>
+                <span class="etiqueta">{{ recibo.estado }}</span>
+              </div>
+              <p class="tarjeta-registro-portal-meta">
+                Versión v{{ recibo.version }}
+                · Publicado {{ recibo.fechaPublicacion | date:'dd/MM/yyyy' }}
+              </p>
+              @if (recibo.hashPdf && !recibo.requiereRepublicacion) {
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  (click)="exportarExpedienteRecibo(recibo.id, recibo.periodo)"
+                >
+                  Descargar expediente
+                </button>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="tarjeta-formulario seccion-legajo">
+      <h3>Activos asignados</h3>
+      @if (cargandoActivos()) {
+        <p class="item-checklist-meta">Cargando activos...</p>
+      } @else if (activosAsignados().length === 0) {
+        <p class="item-checklist-meta">Sin activos asignados actualmente.</p>
+      } @else {
+        <div class="lista-registros-portal">
+          @for (asignacion of activosAsignados(); track asignacion.id) {
+            <article class="tarjeta-registro-portal">
+              <div class="tarjeta-registro-portal-encabezado">
+                <strong>{{ asignacion.nombreActivo }}</strong>
+              </div>
+              <p class="tarjeta-registro-portal-meta">
+                Entrega {{ asignacion.fechaEntrega | date:'dd/MM/yyyy' }}
+                @if (asignacion.notas) {
+                  · {{ asignacion.notas }}
+                }
+              </p>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>

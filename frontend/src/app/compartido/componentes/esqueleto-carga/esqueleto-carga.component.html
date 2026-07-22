@@ -1,0 +1,81 @@
+<div class="esqueleto-contenedor" role="status" aria-live="polite" aria-busy="true">
+  <span class="esqueleto-solo-lectores">Cargando contenido…</span>
+
+  @switch (variante()) {
+    @case ('indicadores') {
+      <div class="grilla-tarjetas-indicador esqueleto-indicadores">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="esqueleto-indicador">
+            <div class="esqueleto-linea esqueleto-linea-valor"></div>
+            <div class="esqueleto-linea esqueleto-linea-corta"></div>
+          </div>
+        }
+      </div>
+    }
+    @case ('perfil') {
+      <div class="esqueleto-perfil">
+        @for (bloque of [1, 2]; track bloque) {
+          <div class="esqueleto-seccion">
+            <div class="esqueleto-linea esqueleto-linea-titulo"></div>
+            <div class="esqueleto-grilla-perfil">
+              @for (fila of [1, 2, 3, 4]; track fila) {
+                <div class="esqueleto-campo-perfil">
+                  <div class="esqueleto-linea esqueleto-linea-etiqueta"></div>
+                  <div class="esqueleto-linea"></div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+    @case ('notificaciones') {
+      <div class="esqueleto-notificaciones">
+        <div class="esqueleto-linea esqueleto-linea-seccion"></div>
+        @for (i of [1, 2, 3]; track i) {
+          <div class="esqueleto-tarjeta">
+            <div class="esqueleto-linea esqueleto-linea-titulo"></div>
+            <div class="esqueleto-linea"></div>
+            <div class="esqueleto-linea esqueleto-linea-corta"></div>
+          </div>
+        }
+      </div>
+    }
+    @case ('vacaciones') {
+      <div class="esqueleto-vacaciones">
+        <div class="esqueleto-seccion">
+          <div class="esqueleto-linea esqueleto-linea-titulo"></div>
+          <div class="grilla-saldo-portal esqueleto-saldo">
+            @for (i of [1, 2, 3]; track i) {
+              <div class="esqueleto-saldo-item">
+                <div class="esqueleto-linea esqueleto-linea-valor"></div>
+                <div class="esqueleto-linea esqueleto-linea-corta"></div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="esqueleto-seccion">
+          <div class="esqueleto-linea esqueleto-linea-titulo"></div>
+          <div class="esqueleto-bloque esqueleto-calendario"></div>
+        </div>
+        @for (i of [1, 2]; track i) {
+          <div class="esqueleto-tarjeta">
+            <div class="esqueleto-linea esqueleto-linea-titulo"></div>
+            <div class="esqueleto-linea esqueleto-linea-corta"></div>
+          </div>
+        }
+      </div>
+    }
+    @default {
+      <div class="lista-registros-portal esqueleto-lista">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="esqueleto-tarjeta">
+            <div class="esqueleto-linea esqueleto-linea-titulo"></div>
+            <div class="esqueleto-linea"></div>
+            <div class="esqueleto-linea esqueleto-linea-corta"></div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

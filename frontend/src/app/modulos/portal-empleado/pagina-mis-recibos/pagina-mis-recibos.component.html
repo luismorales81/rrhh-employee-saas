@@ -1,0 +1,133 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Recibos</h1>
+    <p>Firmados y listos cuando los necesites</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="lista" />
+  } @else {
+    <div class="lista-registros-portal">
+      @for (r of recibos(); track r.id) {
+        <article class="tarjeta-registro-portal">
+          <div class="tarjeta-registro-portal-encabezado">
+            <h3>{{ r.titulo }}</h3>
+            <span class="etiqueta" [class.activo]="r.estado === 'FIRMADO'">{{ r.estado }}</span>
+          </div>
+          <p class="tarjeta-registro-portal-meta">
+            Período {{ r.periodo }} · v{{ r.version }}
+            @if (r.fechaPublicacion) {
+              · Publicado {{ r.fechaPublicacion | date:'dd/MM/yyyy' }}
+            }
+            @if (r.fechaFirma) {
+              · Firmado {{ r.fechaFirma | date:'dd/MM/yyyy' }}
+            }
+          </p>
+          <div class="tarjeta-registro-portal-acciones">
+            <button type="button" class="btn-primario" (click)="abrirRecibo(r)">
+              {{ puedeConfirmar(r.estado) ? 'Ver y firmar' : 'Ver' }}
+            </button>
+            @if (puedeDescargarComprobante(r)) {
+              <button type="button" class="btn-secundario" (click)="descargarComprobante(r)">
+                Comprobante
+              </button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="estado-vacio">
+          <h2 class="estado-vacio-titulo">Sin recibos</h2>
+          <p class="estado-vacio-descripcion">
+            Cuando publiquen tu recibo de sueldo, lo vas a ver acá para revisarlo y firmarlo.
+          </p>
+        </div>
+      }
+    </div>
+  }
+
+  @if (reciboSeleccionado(); as recibo) {
+    <section class="tarjeta-formulario detalle-recibo">
+      <header class="tarjeta-registro-portal-encabezado">
+        <h2>{{ recibo.titulo }}</h2>
+        <button type="button" class="btn-secundario" (click)="cerrarDetalle()">Cerrar</button>
+      </header>
+      <p class="tarjeta-registro-portal-meta">
+        Período {{ recibo.periodo }} · <strong>{{ recibo.estado }}</strong> · Versión {{ recibo.version }}
+      </p>
+
+      <app-visor-documento
+        [blobFuente]="blobPdf()"
+        [cargandoExterno]="cargandoPdf()"
+        titulo="Recibo PDF"
+        etiquetaCarga="Cargando PDF del recibo"
+        (errorCarga)="error.set($event)"
+      />
+
+      @if (versiones().length > 1) {
+        <div class="historial-versiones">
+          <h3>Historial de versiones</h3>
+          <ul>
+            @for (v of versiones(); track v.id) {
+              <li>
+                v{{ v.version }} — {{ v.estado }}
+                @if (!v.vigente) { (reemplazada) }
+                — {{ v.fechaPublicacion | date:'dd/MM/yyyy' }}
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (puedeConfirmar(recibo.estado)) {
+        <div class="acciones-firma">
+          <div class="texto-legal-firma">
+            <h3>Declaración legal</h3>
+            <p>{{ textoLegal }}</p>
+          </div>
+          <label class="checkbox-legal">
+            <input type="checkbox" [checked]="confirmacionLegal()" (change)="confirmacionLegal.set($any($event.target).checked)" />
+            Leí el recibo, el texto legal anterior y confirmo haber tomado conocimiento de su contenido.
+          </label>
+          @if (requiereContrasena) {
+            <label>
+              Contraseña actual *
+              <input type="password" [value]="contrasenaFirma()" (input)="contrasenaFirma.set($any($event.target).value)" />
+            </label>
+          }
+
+          @if (!mostrarDisconformidad()) {
+            <div class="botones-firma">
+              <button type="button" class="btn-primario" [disabled]="procesando()" (click)="confirmar('CONFIRMADO')">
+                Confirmar recepción conforme
+              </button>
+              <button type="button" class="btn-secundario" (click)="mostrarDisconformidad.set(true)">
+                Firmar en disconformidad
+              </button>
+            </div>
+          } @else {
+            <label>
+              Motivo de disconformidad *
+              <textarea rows="3" [value]="comentarioDisconformidad()" (input)="comentarioDisconformidad.set($any($event.target).value)"></textarea>
+            </label>
+            <div class="botones-firma">
+              <button type="button" class="btn-peligro" [disabled]="procesando()" (click)="confirmar('DISCONFORMIDAD')">
+                Registrar disconformidad
+              </button>
+              <button type="button" class="btn-secundario" (click)="mostrarDisconformidad.set(false)">Cancelar</button>
+            </div>
+          }
+        </div>
+      } @else if (puedeDescargarComprobante(recibo)) {
+        <div class="botones-firma">
+          <button type="button" class="btn-primario" (click)="descargarComprobante(recibo)">
+            Descargar comprobante de firma
+          </button>
+        </div>
+      }
+    </section>
+  }
+</div>

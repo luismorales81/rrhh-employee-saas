@@ -1,0 +1,55 @@
+.grilla-empresas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--espacio-4);
+}
+
+.tarjeta-empresa {
+  background: var(--color-superficie);
+  border-radius: var(--radio-lg);
+  padding: var(--espacio-6);
+  border: 1px solid var(--color-borde-suave);
+  box-shadow: var(--sombra-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  transition: box-shadow 0.15s, border-color 0.15s;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-borde);
+    box-shadow: var(--sombra-md);
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-texto);
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  p {
+    margin: 0;
+    color: var(--color-texto-secundario);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .acciones-empresa {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-top: var(--espacio-3);
+    padding-top: var(--espacio-3);
+    border-top: 1px solid var(--color-borde-suave);
+  }
+}

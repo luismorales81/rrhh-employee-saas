@@ -1,0 +1,37 @@
+<div class="pantalla-login">
+  <div class="tarjeta-login">
+    <div class="encabezado">
+      <img class="logo-ligo" src="assets/marca/ligo-logo.svg" alt="Ligo" width="180" height="46" />
+      <p class="tagline">Conectando personas y empresas.</p>
+      <p class="subtitulo">Entrá a tu espacio</p>
+    </div>
+
+    <form [formGroup]="formulario" (ngSubmit)="enviar()">
+      <label>
+        Correo electrónico
+        <input type="email" formControlName="email" placeholder="usuario@empresa.com" />
+      </label>
+
+      <label>
+        Contraseña
+        <input type="password" formControlName="password" placeholder="••••••••" />
+      </label>
+
+      @if (error()) {
+        <div class="mensaje-error">{{ error() }}</div>
+      }
+
+      <button type="submit" class="btn-primario" [disabled]="cargando()">
+        {{ cargando() ? 'Ingresando...' : 'Entrar' }}
+      </button>
+    </form>
+
+    @if (!esProduccion) {
+      <p class="ayuda">
+        Demo equipo: rrhh&#64;demo.local / Demo123! &nbsp;|&nbsp;
+        Empleado: empleado&#64;demo.local / Demo123! &nbsp;|&nbsp;
+        Admin: admin&#64;rrhh.local / Admin123!
+      </p>
+    }
+  </div>
+</div>

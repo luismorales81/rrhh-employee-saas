@@ -1,0 +1,391 @@
+<div class="pagina">
+
+  <header class="encabezado-pagina">
+
+    <h1>Vacaciones</h1>
+
+    <p>Pedí tus días en segundos</p>
+
+  </header>
+
+
+
+  @if (error()) {
+
+    <div class="estado-error">{{ error() }}</div>
+
+  }
+
+
+
+  @if (cargando()) {
+
+    <app-esqueleto-carga variante="vacaciones" />
+
+  } @else {
+
+    @if (saldo(); as s) {
+
+      <section class="tarjeta-formulario">
+
+        <h2>Mi saldo {{ s.anio }} — {{ s.politicaNombre }}</h2>
+
+        <p class="ayuda-formulario">Antigüedad al 31/12: {{ s.antiguedadAnios }} años · Total anual: {{ s.diasTotales }} días</p>
+
+        <div class="grilla-saldo-portal">
+
+          <div class="item-saldo-portal">
+
+            <span class="item-saldo-valor">{{ s.diasDisponibles }}</span>
+
+            <span class="item-saldo-etiqueta">Disponibles</span>
+
+          </div>
+
+          <div class="item-saldo-portal">
+
+            <span class="item-saldo-valor">{{ s.diasPendientes }}</span>
+
+            <span class="item-saldo-etiqueta">Pendientes</span>
+
+          </div>
+
+          <div class="item-saldo-portal">
+
+            <span class="item-saldo-valor">{{ s.diasTomados }}</span>
+
+            <span class="item-saldo-etiqueta">Tomados</span>
+
+          </div>
+
+        </div>
+
+        @if (historialSaldo().length > 1) {
+
+          <details class="ayuda-formulario">
+
+            <summary>Ver otros años</summary>
+
+            <ul>
+
+              @for (h of historialSaldo(); track h.anio) {
+
+                @if (h.anio !== s.anio) {
+
+                  <li>{{ h.anio }}: {{ h.diasDisponibles }} disponibles / {{ h.diasTotales }} totales</li>
+
+                }
+
+              }
+
+            </ul>
+
+          </details>
+
+        }
+
+      </section>
+
+    }
+
+
+
+    <div class="barra-herramientas con-accion-principal">
+
+      <span></span>
+
+      <button type="button" class="btn-primario" (click)="alternarFormulario()">
+
+        {{ mostrarFormulario() ? 'Cancelar' : 'Solicitar vacaciones' }}
+
+      </button>
+
+    </div>
+
+
+
+    @if (mostrarFormulario()) {
+
+      <section class="tarjeta-formulario">
+
+        <h2>Nueva solicitud</h2>
+
+        <p class="ayuda-formulario">Mínimo 7 días corridos por fracción (Ley 27.802). La fecha de inicio debe ser el día siguiente a tu descanso (Art. 151 LCT).</p>
+
+
+
+        @if (erroresValidacion().length) {
+
+          <div class="estado-error">
+
+            <ul>
+
+              @for (e of erroresValidacion(); track e) {
+
+                <li>{{ e }}</li>
+
+              }
+
+            </ul>
+
+          </div>
+
+        }
+
+
+
+        @if (advertencias().length) {
+
+          <div class="estado-carga" role="status">
+
+            <strong>Advertencias:</strong>
+
+            <ul>
+
+              @for (a of advertencias(); track a) {
+
+                <li>{{ a }}</li>
+
+              }
+
+            </ul>
+
+          </div>
+
+        }
+
+
+
+        <form [formGroup]="formularioSolicitar" (ngSubmit)="solicitar()">
+
+          <div class="grilla-formulario">
+
+            <label>Fecha inicio *<input type="date" formControlName="fechaInicio" /></label>
+
+            <label>Fecha fin *<input type="date" formControlName="fechaFin" /></label>
+
+            @if (diasSolicitados() > 0) {
+
+              <p class="ayuda-formulario ancho-completo">{{ diasSolicitados() }} días solicitados</p>
+
+            }
+
+            <label class="ancho-completo">
+
+              Motivo
+
+              <textarea formControlName="motivo" rows="3"></textarea>
+
+            </label>
+
+          </div>
+
+
+
+          @if (simulacionFecha(); as sim) {
+
+            @if (!sim.esValida && sim.fechaSugerida) {
+
+              <div class="estado-carga" role="alert">
+
+                <p>{{ sim.motivo }}</p>
+
+                <p>Fecha sugerida: <strong>{{ sim.fechaFinCalculada ? (sim.fechaSugerida | date:'dd/MM/yyyy') : '' }}</strong></p>
+
+                <button type="button" class="btn-secundario" (click)="aplicarFechaSugerida()">
+
+                  Usar fecha sugerida ({{ sim.fechaSugerida | date:'dd/MM/yyyy' }})
+
+                </button>
+
+              </div>
+
+            } @else if (sim.esValida) {
+
+              <p class="ayuda-formulario">Fecha de inicio válida según tu patrón de descanso.</p>
+
+            }
+
+          }
+
+          @if (simulando()) {
+
+            <p class="ayuda-formulario">Validando fecha de inicio...</p>
+
+          }
+
+
+
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+
+            {{ guardando() ? 'Enviando...' : 'Enviar solicitud' }}
+
+          </button>
+
+        </form>
+
+      </section>
+
+    }
+
+
+
+    <section class="tarjeta-formulario">
+
+      <h2>Calendario</h2>
+
+      <app-calendario-vacaciones
+
+        [eventos]="eventosCalendario()"
+
+        [mostrarEmpleado]="false"
+
+        (rangoMesCambiado)="alCambiarMesCalendario($event)"
+
+      />
+
+    </section>
+
+
+
+    <section>
+
+      <h2 class="seccion-titulo">Historial</h2>
+
+      <div class="lista-registros-portal">
+
+        @for (sol of solicitudes(); track sol.solicitudVacacionesId) {
+
+          <article class="tarjeta-registro-portal">
+
+            <div class="tarjeta-registro-portal-encabezado">
+
+              <h3>{{ sol.fechaInicio | date:'dd/MM/yyyy' }} → {{ sol.fechaFin | date:'dd/MM/yyyy' }}</h3>
+
+              <span class="etiqueta">{{ etiquetaEstado(sol.estado) }}</span>
+
+            </div>
+
+            <p class="tarjeta-registro-portal-meta">
+
+              {{ sol.diasSolicitados }} días
+
+              @if (sol.motivo) {
+
+                · {{ sol.motivo }}
+
+              }
+
+            </p>
+
+
+
+            @if (tieneContrapropuesta(sol)) {
+
+              <div class="tarjeta-formulario" style="margin-top: 0.75rem">
+
+                <p><strong>Contrapropuesta del equipo:</strong></p>
+
+                <p>
+
+                  {{ sol.fechaInicioContrapropuesta | date:'dd/MM/yyyy' }}
+
+                  → {{ sol.fechaFinContrapropuesta | date:'dd/MM/yyyy' }}
+
+                </p>
+
+                @if (sol.motivoContrapropuesta) {
+
+                  <p>{{ sol.motivoContrapropuesta }}</p>
+
+                }
+
+                <div class="celda-acciones">
+
+                  <button
+
+                    type="button"
+
+                    class="btn-primario"
+
+                    [disabled]="guardando()"
+
+                    (click)="aceptarContrapropuesta(sol.solicitudVacacionesId)"
+
+                  >
+
+                    Aceptar contrapropuesta
+
+                  </button>
+
+                  <button
+
+                    type="button"
+
+                    class="btn-accion rechazar"
+
+                    [disabled]="guardando()"
+
+                    (click)="cancelarSolicitud(sol.solicitudVacacionesId)"
+
+                  >
+
+                    Rechazar contrapropuesta
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            }
+
+
+
+            @if (puedeCancelar(sol.estado)) {
+
+              <button
+
+                type="button"
+
+                class="btn-accion rechazar"
+
+                [disabled]="guardando()"
+
+                (click)="cancelarSolicitud(sol.solicitudVacacionesId)"
+
+              >
+
+                Cancelar solicitud
+
+              </button>
+
+            }
+
+          </article>
+
+        } @empty {
+
+          <div class="estado-vacio">
+
+            <h2 class="estado-vacio-titulo">Sin solicitudes previas</h2>
+
+            <p class="estado-vacio-descripcion">
+
+              Todavía no pediste días de vacaciones. Usá «Solicitar vacaciones» cuando quieras planificar tu descanso.
+
+            </p>
+
+          </div>
+
+        }
+
+      </div>
+
+    </section>
+
+  }
+
+</div>
+
+

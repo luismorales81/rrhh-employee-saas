@@ -1,0 +1,102 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Documentos</h1>
+    <p>Siempre a mano</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="lista" />
+  } @else {
+    <div class="lista-registros-portal">
+      @for (a of asignaciones(); track a.id) {
+        <article class="tarjeta-registro-portal">
+          <div class="tarjeta-registro-portal-encabezado">
+            <h3>{{ a.tituloDocumento }}</h3>
+            <span class="etiqueta" [class.activo]="a.firmado">{{ a.estado }}</span>
+          </div>
+          <p class="tarjeta-registro-portal-meta">
+            @if (a.requiereFirma) {
+              Requiere firma · {{ a.firmado ? 'Firmado' : 'Pendiente de firma' }}
+            } @else {
+              Solo lectura
+            }
+          </p>
+          <div class="tarjeta-registro-portal-acciones">
+            @if (a.urlArchivo) {
+              <button type="button" class="btn-secundario" (click)="abrirDocumento(a)">Ver documento</button>
+            }
+            @if (puedeConfirmarLectura(a)) {
+              <button type="button" class="btn-primario" (click)="confirmarLectura(a.id)">
+                Confirmar lectura
+              </button>
+            }
+            @if (puedeFirmar(a)) {
+              <button type="button" class="btn-primario" (click)="iniciarFirma(a.id)">Firmar</button>
+            }
+            @if (a.firmado) {
+              <button type="button" class="btn-secundario" (click)="verEvidenciaFirma(a.id)">Evidencia</button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="estado-vacio">
+          <h2 class="estado-vacio-titulo">Todo al día</h2>
+          <p class="estado-vacio-descripcion">
+            No tenés documentos pendientes de lectura o firma. Cuando te asignen uno, aparecerá acá.
+          </p>
+        </div>
+      }
+    </div>
+
+    @if (documentoEnVista(); as documento) {
+      <section class="tarjeta-formulario">
+        <header class="tarjeta-registro-portal-encabezado">
+          <h2>{{ documento.tituloDocumento }}</h2>
+          <button type="button" class="btn-secundario" (click)="cerrarDocumento()">Cerrar</button>
+        </header>
+        <app-visor-documento
+          [urlFuente]="documento.urlArchivo!"
+          [titulo]="documento.tituloDocumento"
+          etiquetaCarga="Cargando documento"
+          (errorCarga)="error.set($event)"
+        />
+      </section>
+    }
+
+    @if (evidenciaFirma(); as evidencia) {
+      <section class="tarjeta-formulario">
+        <h2>Evidencia de firma</h2>
+        <div class="grilla-formulario">
+          <div><strong>Fecha:</strong> {{ evidencia.fechaFirma }}</div>
+          <div><strong>Hash:</strong> <code>{{ evidencia.hashFirma }}</code></div>
+          <div><strong>Dispositivo:</strong> {{ evidencia.dispositivo ?? '—' }}</div>
+        </div>
+        @if (evidencia.urlArchivoFirmado) {
+          <app-visor-documento
+            [urlFuente]="evidencia.urlArchivoFirmado"
+            titulo="Documento firmado"
+            etiquetaCarga="Cargando documento firmado"
+            (errorCarga)="error.set($event)"
+          />
+        }
+        <button type="button" class="btn-secundario" (click)="cerrarEvidenciaFirma()">Cerrar</button>
+      </section>
+    }
+
+    @if (asignacionFirmandoId()) {
+      <section class="tarjeta-formulario">
+        <h2>Firmar documento</h2>
+        <p class="ayuda-formulario">Dibujá tu firma en el recuadro:</p>
+        <app-canvas-firma (firmaCapturada)="enviarFirma($event)" />
+        <div class="barra-herramientas con-accion-principal">
+          <button type="button" class="btn-secundario" (click)="cancelarFirma()">Cancelar</button>
+          <button type="button" class="btn-primario" (click)="confirmarFirma()">Confirmar firma</button>
+        </div>
+      </section>
+    }
+  }
+</div>

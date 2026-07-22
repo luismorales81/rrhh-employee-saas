@@ -1,0 +1,39 @@
+<div class="layout layout-empleado">
+  <header class="encabezado-empleado">
+    <div class="marca-empleado">
+      <img class="marca-logo" src="assets/marca/ligo-logo.svg" alt="Ligo" width="100" height="26" />
+      <span class="marca-texto">Tu espacio</span>
+    </div>
+    <div class="acciones-encabezado">
+      <button type="button" class="btn-icono-header" (click)="abrirPaleta()" aria-label="Buscar">
+        <app-icono-menu [nombre]="'search'" [tamano]="20" />
+      </button>
+      @if (puedeVerNotificaciones()) {
+        <a
+          class="btn-icono-header"
+          routerLink="/mi-notificaciones"
+          routerLinkActive="activo"
+          aria-label="Alertas"
+        >
+          <app-icono-menu [nombre]="'bell'" [tamano]="20" />
+        </a>
+      }
+      <span class="usuario-email">{{ servicioAutenticacion.sesionActual()?.email }}</span>
+    </div>
+  </header>
+
+  <main class="contenido-empleado">
+    <router-outlet />
+  </main>
+
+  <nav class="navegacion-inferior">
+    @for (item of itemsMenu(); track item.ruta) {
+      <a class="nav-item" [routerLink]="item.ruta" routerLinkActive="activo">
+        <app-icono-menu class="nav-icono" [nombre]="item.icono" [tamano]="22" />
+        <span class="nav-etiqueta">{{ item.etiqueta }}</span>
+      </a>
+    }
+  </nav>
+
+  <ui-paleta-comandos />
+</div>

@@ -1,0 +1,42 @@
+/** Ionic — paleta Ligo (menta #2bb89a, turquesa secundario, coral acento) */
+@use '../tokens';
+
+:root {
+  --ion-font-family: var(--fuente-base);
+
+  --ion-color-primary: #2bb89a;
+  --ion-color-primary-rgb: 43, 184, 154;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #229e84;
+  --ion-color-primary-tint: #40bfa4;
+
+  --ion-color-secondary: #0d7377;
+  --ion-color-secondary-rgb: 13, 115, 119;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #0a5c5f;
+  --ion-color-secondary-tint: #258185;
+
+  --ion-color-tertiary: #f28b82;
+  --ion-color-tertiary-rgb: 242, 139, 130;
+  --ion-color-tertiary-contrast: #1f2937;
+  --ion-color-tertiary-contrast-rgb: 31, 41, 55;
+  --ion-color-tertiary-shade: #e57268;
+  --ion-color-tertiary-tint: #f3978f;
+
+  --ion-color-success: #2bb89a;
+  --ion-color-warning: #c2410c;
+  --ion-color-danger: #b91c1c;
+  --ion-color-medium: #6b7280;
+  --ion-color-light: #f0f4f3;
+
+  --ion-background-color: #f7faf9;
+  --ion-background-color-rgb: 247, 250, 249;
+  --ion-text-color: #1f2937;
+  --ion-text-color-rgb: 31, 41, 55;
+
+  --ion-card-background: #ffffff;
+  --ion-border-color: #e5ebe9;
+  --ion-tab-bar-background: #ffffff;
+}

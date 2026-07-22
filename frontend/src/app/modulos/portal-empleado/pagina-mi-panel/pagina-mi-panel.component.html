@@ -1,0 +1,67 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Inicio</h1>
+    <p>Tus pendientes, de un vistazo</p>
+  </header>
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (estadoOnboarding() === 'EN_PROGRESO') {
+    <div class="aviso-onboarding">
+      <strong>Primeros pasos en curso:</strong> completá las tareas pendientes y la firma de documentos en
+      <a routerLink="/mi-documentos">Documentos</a>.
+    </div>
+
+    @if (tareasOnboarding().length > 0) {
+      <section class="tarjeta-onboarding">
+        <h2>Tus tareas ({{ tareasCompletadas() }} de {{ tareasOnboarding().length }})</h2>
+        <ul class="lista-tareas-onboarding">
+          @for (tarea of tareasOnboarding(); track tarea.id) {
+            <li>
+              <span>{{ tarea.nombre }}</span>
+              @if (!tarea.completada) {
+                <button
+                  type="button"
+                  class="btn-primario"
+                  [disabled]="procesando()"
+                  (click)="marcarTareaCompletada(tarea)"
+                >
+                  Completar
+                </button>
+              } @else {
+                <span class="etiqueta-completada">Hecho</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="indicadores" />
+  } @else {
+    <section>
+      <h2 class="seccion-titulo">Pendientes</h2>
+      <div class="grilla-tarjetas-indicador">
+        @for (tarjeta of tarjetas(); track tarjeta.titulo) {
+          @if (tarjeta.ruta) {
+            <a
+              class="tarjeta-indicador-compartida"
+              [class.alerta]="tarjeta.alerta"
+              [routerLink]="tarjeta.ruta"
+            >
+              <span class="tarjeta-indicador-icono" aria-hidden="true">{{ tarjeta.icono }}</span>
+              <div>
+                <span class="tarjeta-indicador-valor">{{ tarjeta.valor }}</span>
+                <span class="tarjeta-indicador-titulo">{{ tarjeta.titulo }}</span>
+              </div>
+            </a>
+          }
+        }
+      </div>
+    </section>
+  }
+</div>

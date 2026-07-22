@@ -1,0 +1,83 @@
+<div class="pagina">
+  <header class="encabezado-pagina">
+    <h1>Solicitudes</h1>
+    <p>Pedí lo que necesitás</p>
+  </header>
+
+  <div class="barra-herramientas con-accion-principal">
+    <span></span>
+    <button type="button" class="btn-primario" (click)="alternarFormulario()">
+      {{ mostrarFormulario() ? 'Cancelar' : 'Nueva solicitud' }}
+    </button>
+  </div>
+
+  @if (mostrarFormulario()) {
+    <section class="tarjeta-formulario">
+      <h2>Crear y enviar solicitud</h2>
+      <form [formGroup]="formularioCrear" (ngSubmit)="crearYEnviar()">
+        <div class="grilla-formulario">
+          <label>
+            Tipo de solicitud *
+            <select formControlName="tipoSolicitudId">
+              <option value="">Seleccionar...</option>
+              @for (tipo of tipos(); track tipo.id) {
+                <option [value]="tipo.id">{{ tipo.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label class="ancho-completo">
+            Motivo
+            <textarea formControlName="motivo" rows="3"></textarea>
+          </label>
+        </div>
+        <button type="submit" class="btn-primario" [disabled]="guardando()">
+          {{ guardando() ? 'Enviando...' : 'Crear y enviar' }}
+        </button>
+      </form>
+    </section>
+  }
+
+  @if (error()) {
+    <div class="estado-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <app-esqueleto-carga variante="lista" />
+  } @else {
+    <div class="lista-registros-portal">
+      @for (s of solicitudesVisibles(); track s.id) {
+        <article class="tarjeta-registro-portal">
+          <div class="tarjeta-registro-portal-encabezado">
+            <h3>{{ s.tipoSolicitudNombre }}</h3>
+            <span class="etiqueta">{{ etiquetaEstado(s.estado) }}</span>
+          </div>
+          <p class="tarjeta-registro-portal-meta">
+            @if (s.fechaInicioVacaciones && s.fechaFinVacaciones) {
+              {{ s.fechaInicioVacaciones }} → {{ s.fechaFinVacaciones }}
+            } @else {
+              {{ s.motivo ?? 'Sin detalle' }}
+            }
+            · {{ s.createdAt | date:'dd/MM/yyyy' }}
+          </p>
+          @if (puedeEnviar(s.estado) || puedeCancelar(s.estado)) {
+            <div class="tarjeta-registro-portal-acciones">
+              @if (puedeEnviar(s.estado)) {
+                <button type="button" class="btn-primario" (click)="enviar(s.id)">Enviar</button>
+              }
+              @if (puedeCancelar(s.estado)) {
+                <button type="button" class="btn-secundario" (click)="cancelar(s.id)">Cancelar</button>
+              }
+            </div>
+          }
+        </article>
+      } @empty {
+        <div class="estado-vacio">
+          <h2 class="estado-vacio-titulo">Sin solicitudes</h2>
+          <p class="estado-vacio-descripcion">
+            Todavía no creaste ninguna solicitud. Usá «Nueva solicitud» para pedir vacaciones, licencias u otros trámites.
+          </p>
+        </div>
+      }
+    </div>
+  }
+</div>
